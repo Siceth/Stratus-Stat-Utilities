@@ -2,7 +2,7 @@
 
 // START CONFIG
 
-$cacheDir = '../path/to/cache';
+$cacheDir = '../path/to/cache/';
 $cacheDays = 2;
 
 // END CONFIG
