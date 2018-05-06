@@ -10,7 +10,7 @@ $cacheDays = 2;
 header('Content-type: text/plain');
 if(isset($_GET['request'])) {
 	$_GET['request'] = strtolower($_GET['request']);
-	if(!isset($_GET['force-renew']) && (time()-(file_exists($cacheDir.$_GET['request']) ? filemtime($cacheDir.$_GET['request']) : 0)) < $cacheDays*86400) {
+	if(!isset($_GET['force-renew']) && !is_dir($cacheDir.$_GET['request']) && (time()-(file_exists($cacheDir.$_GET['request']) ? filemtime($cacheDir.$_GET['request']) : 0)) < $cacheDays*86400) {
 		echo file_get_contents($cacheDir.$_GET['request']);
 	} else {
 		$response = substr(get_headers('https://stratus.network/'.$_GET['request'])[0], 9, 3);
@@ -20,7 +20,10 @@ if(isset($_GET['request'])) {
 			$start = microtime(1);
 			echo file_get_contents('https://stratus.network/'.$_GET['request']).'<!-- Page took '.(microtime(1)-$start).'s to load from Stratus -->';
 			$ob = ob_get_contents();
-			if(!ob_end_flush() || !file_put_contents($cacheDir.$_GET['request'], $ob)) {
+			if(!is_dir(dirname($cacheDir.$_GET['request']))) {
+				mkdir(dirname($cacheDir.$_GET['request']), 0777, true);
+			}
+			if(!ob_end_flush() || !(is_dir($cacheDir.$_GET['request']) ? 1 : file_put_contents($cacheDir.$_GET['request'], $ob))) {
 				http_response_code(500);
 				echo '[*] Server cache failed!';
 			}
