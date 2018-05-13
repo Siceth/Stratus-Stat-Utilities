@@ -385,7 +385,7 @@ def winPredictor():
 	matchPage = BS(matchPage[1], "lxml")
 	
 	mapName = matchPage.find("h2").find("a").get_text().title()
-	mapType = ([x["src"] for x in matchPage.findAll("img", {"class": "thumbnail"})][0]).split('/')[4]
+	mapType = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
 	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked
 	
 	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed"]:
