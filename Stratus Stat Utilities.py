@@ -34,6 +34,7 @@ import glob
 import math
 import random
 import re
+import time
 
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -101,9 +102,9 @@ def getStatPos(stat):
 	else:
 		return 1
 
-def getPlayerStats(player, doCalculations = True):
+def getPlayerStats(player, doCalculations = True, forceRenew = True):
 	stats = dict()
-	playerPage = curlRequest(player + "?force-renew")
+	playerPage = curlRequest(player + ("?force-renew" if forceRenew else ""))
 	
 	if playerPage[0] > 399:
 		stats["exists"] = False
@@ -373,12 +374,12 @@ def winPredictor():
 		else:
 			print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
 	print(loadMessage())
-	matchPage = curlRequest("matches/" + match)
+	matchPage = curlRequest("matches/" + match + "?force-renew")
 	if matchPage[0] > 399:
 		print("[*] cURL responded with a server error while requesting the main match page (%i). Is the website down?" % matchPage[0])
 		exit()
 	match = (str([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:] if match.replace(' ', '')=="" else match))
-	matchPage = curlRequest("matches/" + match)
+	matchPage = curlRequest("matches/" + match + "?force-renew")
 	if matchPage[0] > 399:
 		print("[*] cURL responded with a server error while requesting the match page (%i). Does the match exist?" % matchPage[0])
 		exit()
@@ -402,7 +403,10 @@ def winPredictor():
 			composition[team] = {"players": dict(), "stats": dict()}
 			for player in [x["href"][1:] for x in teamDiv.findAll("a", href=True)]:
 				composition[team]["players"][player] = dict()
-			
+		
+		tPreFetch = time.time()
+		tEst = 0
+		
 		if MULTITHREADED:
 			print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
 			with ThreadPoolExecutor(max_workers=4) as executor:
@@ -410,20 +414,25 @@ def winPredictor():
 					print("\nGetting stats for players on %s team (%d)..." % (team, len(composition[team]["players"])))
 					for player in composition[team]["players"]:
 						print("Getting stats for %s..." % player)
-						composition[team]["players"][player] = executor.submit(getPlayerStats, player)
+						composition[team]["players"][player] = executor.submit(getPlayerStats, player, True, False)
 						players.append(player)
-				print("\nQuerying web server for player statistics (this will take some time; ETA %ds)..." % math.ceil(len(players)*2.2))
+				tEst = len(players)*2.2
+				print("\nQuerying web server for player statistics (this will take some time; ETA %ds)..." % math.ceil(tEst))
 				for team in composition:
 					for player in composition[team]["players"]:
 						if not isinstance(composition[team]["players"][player], dict):
 							composition[team]["players"][player] = (composition[team]["players"][player]).result()
 		else:
 			for team in composition:
-				print("\nGetting stats for players on %s team (%d; ETA %ds)..." % (team, len(composition[team]["players"]), math.ceil(len(composition[team]["players"])*2.5)))
+				tEstTeam = len(composition[team]["players"])*2.5
+				tEst += tEstTeam
+				print("\nGetting stats for players on %s team (%d; ETA %ds)..." % (team, len(composition[team]["players"]), math.ceil(tEstTeam)))
 				for player in composition[team]["players"]:
 					print("Getting stats for %s..." % player)
-					composition[team]["players"][player] = getPlayerStats(player)
+					composition[team]["players"][player] = getPlayerStats(player, True, False)
 					players.append(player)
+		
+		tPostFetch = time.time()
 		
 		gstats["largest_kd"] = ["Nobody", 0]
 		gstats["largest_adjusted_kd"] = ["Nobody", 0]
@@ -687,6 +696,8 @@ def winPredictor():
 		gstats["average_reliability_index"] = gstats["average_reliability_index"] / (1 if gstats["total_players"]==0 else gstats["total_players"])
 		gstats["username_amalgamation"] = gstats["username_amalgamation"][:round(gstats["average_username_length"])]
 		
+		tPostCalc = time.time()
+		
 		if(numTeams > 0):
 		
 			if not UNIX:
@@ -694,7 +705,15 @@ def winPredictor():
 				os.system("cls")
 			else:
 				os.system("clear")
-			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n         Global Statistics         \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+			
+			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+			
+			tTotal = tPostCalc - tPreFetch
+			print("Program took %.2fs to fetch base player statistics and %.5fs to calculate all other statistics, totaling %.2fs." % (tPostFetch - tPreFetch, tPostCalc - tPostFetch, tTotal))
+			print("Expected total run time was %.2fs." % tEst)
+			print("Latency margin of error is %.2f%%." % abs((tEst - tTotal) * 100 / tTotal))
+			
+			print("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n         Global Statistics         \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
 			print("Detected map type: %s" % mapType.upper())
 			for stat in gstats:
 				if isinstance(gstats[stat], list):
