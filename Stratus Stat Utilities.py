@@ -11,6 +11,7 @@ TITLE_TEXT = "Stratus Stat Utilities"
 VERSION = "1.0"
 MULTITHREADED = True
 MIRROR = "https://stats.seth-phillips.com/stratus/"
+DELAY = 30
 
 # END CONFIG
 
@@ -29,6 +30,7 @@ if sys.version_info[0] < 3:
 	print("You must run this on Python 3.x")
 	exit()
 
+import _thread
 import ctypes
 import glob
 import math
@@ -63,6 +65,11 @@ try:
 except ImportError:
 	print("Your system is missing BeautifulSoup. Please run `easy_install beautifulsoup4` or `pip install beautifulsoup4` before executing.")
 	exit()
+
+def lazy_input(L):
+	global UNIX
+	os.system("read > /dev/null" if UNIX else "pause > nul")
+	L.append(None)
 
 def loadMessage():
 	return random.choice(["Searching the cloud", "Getting Stratus status", "Completing the water cycle", "Querying for snakes and goobers", "Watching the clouds"]) + "...\n"
@@ -364,15 +371,23 @@ def listStaff():
 		print(" - %s" % member)
 
 def winPredictor():
-	global MULTITHREADED
-	print("Enter a match to lookup (leave blank for the current match):")
+	global MULTITHREADED, DELAY
 	match = ""
-	while True:
-		match = input(" > ").replace(' ', '')
-		if re.match("^[A-Za-z0-9\-]{0,36}$", match) or match.replace(' ', '')=="":
-			break
-		else:
-			print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
+	if DELAY == 0:
+		print("Enter a match to lookup (leave blank for the current match):")
+		while True:
+			match = input(" > ").replace(' ', '')
+			if re.match("^[A-Za-z0-9\-]{0,36}$", match) or match.replace(' ', '')=="":
+				break
+			else:
+				print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
+	else:
+		print("\nWaiting %s seconds before stating...\n(Or press any key to override & stat now)\n" % DELAY)
+		L = []
+		_thread.start_new_thread(lazy_input, (L,))
+		for x in range(0, DELAY*10):
+			time.sleep(.1)
+			if L: break
 	print(loadMessage())
 	matchPage = curlRequest("matches/" + match + "?force-renew")
 	if matchPage[0] > 399:

@@ -37,6 +37,7 @@ What little is available to configure should be pretty self-explanitory.
 * **TITLE_TEXT** and **VERSION** are currently just for the a e s t h e t i c.
 * When **MULTITHREADED** is enabled, Python's futures are used to "asynchronously" (but not really) call cURL requests.  Tests have shown it to be _slightly_ faster.  When disabled, it'll just go through one person at a time.
 * **MIRROR** is the full URL to a content deliverer that mirrors the actual website.  A cache mirror is useful because the Stratus Network website can get really slow at peak times and we don't want to overwhelm their servers.  Leaving this option blank will just request data straight from [https://stratus.network/](https://stratus.network/).
+* Setting a nonzero **DELAY** allows you to request win predictor statistics in tandem with the beginning of the current match.  Setting the delay to zero asks for match input instead.
 
 ### index.php
 * **$cacheDir** should point to a pre-existing directory with proper permissions already established.  All of the data requests coming through your mirror will be stored there.
