@@ -11,7 +11,7 @@ TITLE_TEXT = "Stratus Stat Utilities"
 VERSION = "1.0"
 MULTITHREADED = True
 MIRROR = "https://stats.seth-phillips.com/stratus/"
-DELAY = 30
+DELAY = 15
 
 # END CONFIG
 
@@ -463,6 +463,20 @@ def winPredictor():
 		gstats["worst_rank"] = ["Nobody", 0]
 		gstats["most_trophies"] = ["Nobody", 0]
 		
+		gstats["top_monuments_per_hour"] = ["Nobody", 0]
+		gstats["top_wools_per_hour"] = ["Nobody", 0]
+		gstats["top_cores_per_hour"] = ["Nobody", 0]
+		gstats["top_droplets_per_hour"] = ["Nobody", 0]
+		gstats["top_new_friends_per_hour"] = ["Nobody", 0]
+		gstats["top_kills_per_game"] = ["Nobody", 0]
+		gstats["top_adjusted_kills_per_game"] = ["Nobody", 0]
+		gstats["top_waking_time_spent_on_stratus"] = ["Nobody", 0]
+		gstats["top_adjusted_waking_time_spent_on_stratus"] = ["Nobody", 0]
+		gstats["longest_average_game_experience"] = ["Nobody", 0]
+		gstats["longest_adjusted_average_game_experience"] = ["Nobody", 0]
+		gstats["shortest_average_game_experience"] = ["Nobody", 0]
+		gstats["shortest_adjusted_average_game_experience"] = ["Nobody", 0]
+		
 		gstats["average_kd"] = 0
 		gstats["average_kill_rank"] = 0
 		gstats["average_experienced_game_length_in_minutes"] = 0
@@ -597,6 +611,47 @@ def winPredictor():
 				if pstats["trophies"] > gstats["most_trophies"][1]:
 					gstats["most_trophies"][0] = pstats["username"]
 					gstats["most_trophies"][1] = pstats["trophies"]
+				
+				if pstats["average_monuments_per_hour"] > gstats["top_monuments_per_hour"][1]:
+					gstats["top_monuments_per_hour"][0] = pstats["username"]
+					gstats["top_monuments_per_hour"][1] = pstats["average_monuments_per_hour"]
+				if pstats["average_wools_per_hour"] > gstats["top_wools_per_hour"][1]:
+					gstats["top_wools_per_hour"][0] = pstats["username"]
+					gstats["top_wools_per_hour"][1] = pstats["average_wools_per_hour"]
+				if pstats["average_cores_per_hour"] > gstats["top_cores_per_hour"][1]:
+					gstats["top_cores_per_hour"][0] = pstats["username"]
+					gstats["top_cores_per_hour"][1] = pstats["average_cores_per_hour"]
+				if pstats["average_droplets_per_hour"] > gstats["top_droplets_per_hour"][1]:
+					gstats["top_droplets_per_hour"][0] = pstats["username"]
+					gstats["top_droplets_per_hour"][1] = pstats["average_droplets_per_hour"]
+				if pstats["average_new_friends_per_hour"] > gstats["top_new_friends_per_hour"][1]:
+					gstats["top_new_friends_per_hour"][0] = pstats["username"]
+					gstats["top_new_friends_per_hour"][1] = pstats["average_new_friends_per_hour"]
+				if pstats["average_kills_per_game"] > gstats["top_kills_per_game"][1]:
+					gstats["top_kills_per_game"][0] = pstats["username"]
+					gstats["top_kills_per_game"][1] = pstats["average_kills_per_game"]
+				if pstats["average_kills_per_game"]*pstats["merit_multiplier"] > gstats["top_adjusted_kills_per_game"][1]:
+					gstats["top_adjusted_kills_per_game"][0] = pstats["username"]
+					gstats["top_adjusted_kills_per_game"][1] = pstats["average_kills_per_game"]
+				if pstats["percent_waking_time_spent_on_stratus"] > gstats["top_waking_time_spent_on_stratus"][1]:
+					gstats["top_waking_time_spent_on_stratus"][0] = pstats["username"]
+					gstats["top_waking_time_spent_on_stratus"][1] = pstats["percent_waking_time_spent_on_stratus"]
+				if pstats["percent_waking_time_spent_on_stratus"]*pstats["merit_multiplier"] > gstats["top_adjusted_waking_time_spent_on_stratus"][1]:
+					gstats["top_adjusted_waking_time_spent_on_stratus"][0] = pstats["username"]
+					gstats["top_adjusted_waking_time_spent_on_stratus"][1] = pstats["percent_waking_time_spent_on_stratus"]
+				if pstats["average_experienced_game_length_in_minutes"] > gstats["longest_average_game_experience"][1]:
+					gstats["longest_average_game_experience"][0] = pstats["username"]
+					gstats["longest_average_game_experience"][1] = pstats["average_experienced_game_length_in_minutes"]
+				if pstats["average_experienced_game_length_in_minutes"]*pstats["merit_multiplier"] > gstats["longest_adjusted_average_game_experience"][1]:
+					gstats["longest_adjusted_average_game_experience"][0] = pstats["username"]
+					gstats["longest_adjusted_average_game_experience"][1] = pstats["average_experienced_game_length_in_minutes"]
+				if gstats["shortest_average_game_experience"][0]=="Nobody" or pstats["average_experienced_game_length_in_minutes"] < gstats["shortest_average_game_experience"][1]:
+					gstats["shortest_average_game_experience"][0] = pstats["username"]
+					gstats["shortest_average_game_experience"][1] = pstats["average_experienced_game_length_in_minutes"]
+				if gstats["shortest_adjusted_average_game_experience"][0]=="Nobody" or pstats["average_experienced_game_length_in_minutes"]/pstats["merit_multiplier"] < gstats["shortest_adjusted_average_game_experience"][1]:
+					gstats["shortest_adjusted_average_game_experience"][0] = pstats["username"]
+					gstats["shortest_adjusted_average_game_experience"][1] = pstats["average_experienced_game_length_in_minutes"]
+				
 				gstats["average_reliability_index"] += pstats["reliability_index"]
 				gstats["cumulative_reliability_index"] *= pstats["reliability_index"]
 			
