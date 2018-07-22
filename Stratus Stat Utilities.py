@@ -148,13 +148,13 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 					if len(subs) > 0:
 						for sub in subs:
 							if sub.text.lower()=="cores leaked":
-								stats["cores"] = int((matches.get_text())[:-12])
+								stats["cores"] = int(re.sub("\D", "", matches.get_text()))
 								break
 							elif sub.text.lower()=="monuments destroyed":
-								stats["monuments"] = int((matches.get_text())[:-19])
+								stats["monuments"] = int(re.sub("\D", "", matches.get_text()))
 								break
 							elif sub.text.lower()=="wools placed":
-								stats["wools"] = int((matches.get_text())[:-12])
+								stats["wools"] = int(re.sub("\D", "", matches.get_text()))
 								break
 			if "username" not in stats:
 				stats["username"] = player
@@ -183,9 +183,9 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 			
 			data = playerPage.findAll("h4", {"class": "strong"})
 			if len(data) >= 3:
-				stats["first_joined_days_ago"] = int((data[0].get_text())[:-21])
-				stats["hours_played"] = int((data[1].get_text())[:-12])
-				stats["teams_joined"] = int((data[2].get_text())[:-12])
+				stats["first_joined_days_ago"] = int(re.sub("\D", "", data[0].get_text()))
+				stats["hours_played"] = int(re.sub("\D", "", data[1].get_text()))
+				stats["teams_joined"] = int(re.sub("\D", "", data[2].get_text()))
 			else:
 				stats["first_joined_days_ago"] = 0
 				stats["hours_played"] = 0
