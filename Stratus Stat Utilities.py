@@ -405,7 +405,25 @@ def winPredictor():
 	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked
 	
 	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed"]:
-		
+		mapExists = True
+	else:
+		if(mapType=="" or mapType=="map.png" or mapType[:7]=="map.png"):
+			print("The match is missing its map.png file and therefore the gamemode cannot be determined!")
+		else:
+			print("The requested match type (\"%s\") is not a supported gamemode!" % mapType)
+		print("Continue anyway? [y/n]")
+		while True:
+			option = input(" > ").lower()
+			if option=='y' or option=='yes':
+				mapExists = True
+				break
+			elif option=='n' or option=='no':
+				mapExists = False
+				break
+			else:
+				print("Please specify a \"yes\" or \"no\":")
+	
+	if mapExists:
 		teamRow = matchPage.findAll("div", {"class": "row"})[2]
 		players = list()
 		gstats = dict()
@@ -716,7 +734,8 @@ def winPredictor():
 			elif mapType == "mixed":
 				composition[team]["stats"]["raw_score"] = 0.5*composition[team]["stats"]["average_kd"] + 0.1*composition[team]["stats"]["average_monuments_per_hour"] + 0.1*composition[team]["stats"]["average_wools_per_hour"] + 0.1*composition[team]["stats"]["average_cores_per_hour"] + 0.2*composition[team]["stats"]["average_kills_per_game"]
 			else:
-				print("[*] Unsupported map type!")
+				print("[*] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
+				composition[team]["stats"]["raw_score"] = 1.0*composition[team]["stats"]["average_khpdg"]
 			
 			composition[team]["stats"]["raw_score"] += 0.02*composition[team]["stats"]["total_donors"] + 0.03*composition[team]["stats"]["total_tournament_winners"]
 			composition[team]["stats"]["adjusted_score"] = composition[team]["stats"]["raw_score"] * composition[team]["stats"]["average_merit"]
@@ -838,10 +857,8 @@ def winPredictor():
 			
 		else:
 			print("[*] The team list is empty and therefore no stats can be found!")
-	elif(mapType=="" or mapType=="map.png"):
-		print("[*] The match is missing its map.png file and therefore the gamemode cannot be determined!")
 	else:
-		print("[*] The requested match type (\"%s\") is not a supported gamemode!" % mapType)
+		print("\nAborted. Press any key to continue.")
 
 def main():
 	global UNIX, TITLE_TEXT, VERSION
