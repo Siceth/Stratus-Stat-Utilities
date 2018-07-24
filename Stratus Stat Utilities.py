@@ -68,7 +68,7 @@ except ImportError:
 
 def lazy_input(L):
 	global UNIX
-	os.system("read > /dev/null" if UNIX else "pause > nul")
+	os.system("read _ > /dev/null" if UNIX else "pause > nul")
 	L.append(None)
 
 def loadMessage():
@@ -900,13 +900,13 @@ def main():
 		else:
 			EXIT = True
 		if not EXIT:
-			os.system("read > /dev/null" if UNIX else "pause > nul")
+			os.system("read _ > /dev/null" if UNIX else "pause > nul")
 	print("Goodbye.")
 	exit(False)
 
 def exit(pause = True):
 	if pause:
-		os.system("read > /dev/null" if UNIX else "pause > nul")
+		os.system("read _ > /dev/null" if UNIX else "pause > nul")
 	sys.exit(0)
 
 if __name__ == '__main__':
