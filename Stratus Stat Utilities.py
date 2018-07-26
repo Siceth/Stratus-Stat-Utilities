@@ -828,6 +828,7 @@ def winPredictor(match = ""):
 			if HEADLESS_MODE:
 				print("All standard output now moved to `output.log`.")
 				sys.stdout = open("output.log", 'a')
+				print(";;;");
 			
 			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
 			
