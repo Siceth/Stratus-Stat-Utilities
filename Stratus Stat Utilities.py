@@ -8,10 +8,11 @@
 # START CONFIG
 
 TITLE_TEXT = "Stratus Stat Utilities"
-VERSION = "1.0"
+VERSION = "1.1"
 MULTITHREADED = True
 MIRROR = "https://stats.seth-phillips.com/stratus/"
 DELAY = 15
+HEADLESS_MODE = True
 
 # END CONFIG
 
@@ -39,7 +40,9 @@ import re
 import time
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from io import BytesIO
+from shutil import copyfile
 
 try:
 	from lxml import etree
@@ -65,6 +68,17 @@ try:
 except ImportError:
 	print("Your system is missing BeautifulSoup. Please run `easy_install beautifulsoup4` or `pip install beautifulsoup4` before executing.")
 	exit()
+
+def logHeadless(data, newLine = True, mode = 'a'):
+	global HEADLESS_MODE
+	if HEADLESS_MODE:
+		with open("output.log", mode) as f:
+			f.write(data + ('\n' if newLine else ''))
+
+def exit(pause = True):
+	if pause:
+		os.system("read _ > /dev/null" if UNIX else "pause > nul")
+	sys.exit(0)
 
 def lazy_input(L):
 	global UNIX
@@ -370,41 +384,53 @@ def listStaff():
 	for member in staff:
 		print(" - %s" % member)
 
-def winPredictor():
-	global MULTITHREADED, DELAY
-	match = ""
-	if DELAY == 0:
-		print("Enter a match to lookup (leave blank for the current match):")
-		while True:
-			match = input(" > ").replace(' ', '')
-			if re.match("^[A-Za-z0-9\-]{0,36}$", match) or match.replace(' ', '')=="":
-				break
-			else:
-				print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
-	else:
-		print("\nWaiting %s seconds before stating...\n(Or press any key to override & stat now)\n" % DELAY)
-		L = []
-		_thread.start_new_thread(lazy_input, (L,))
-		for x in range(0, DELAY*10):
-			time.sleep(.1)
-			if L: break
-	print(loadMessage())
-	matchPage = curlRequest("matches/" + match + "?force-renew")
+def getLatestMatch():
+	matchPage = curlRequest("matches/?force-renew")
 	if matchPage[0] > 399:
+		logHeadless("[*] Error making request!");
 		print("[*] cURL responded with a server error while requesting the main match page (%i). Is the website down?" % matchPage[0])
 		exit()
-	match = (str([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:] if match.replace(' ', '')=="" else match))
+	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:])
+
+def winPredictor(match = ""):
+	global MULTITHREADED, DELAY, HEADLESS_MODE
+	
+	if not HEADLESS_MODE:
+		if DELAY == 0:
+			print("Enter a match to lookup (leave blank for the current match):")
+			while True:
+				match = input(" > ").replace(' ', '')
+				if re.match("^[A-Za-z0-9\-]{0,36}$", match) or match.replace(' ', '')=="":
+					break
+				else:
+					print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
+		else:
+			print("\nWaiting %s seconds before stating...\n(Or press any key to override & stat now)\n" % DELAY)
+			L = []
+			_thread.start_new_thread(lazy_input, (L,))
+			for x in range(0, DELAY*10):
+				time.sleep(.1)
+				if L: break
+		print(loadMessage())
+	
+	if match.replace(' ', '')=="":
+		logHeadless("Getting list of matches...");
+		match = str(getLatestMatch())
+	
+	logHeadless("Getting match info (%s)..." % match);
 	matchPage = curlRequest("matches/" + match + "?force-renew")
 	if matchPage[0] > 399:
+		logHeadless("[*] Error making request!");
 		print("[*] cURL responded with a server error while requesting the match page (%i). Does the match exist?" % matchPage[0])
 		exit()
 	matchPage = BS(matchPage[1], "lxml")
 	
+	logHeadless("Parsing response...");
 	mapName = matchPage.find("h2").find("a").get_text().title()
 	mapType = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
 	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked
 	
-	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed"]:
+	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed"] or HEADLESS_MODE:
 		mapExists = True
 	else:
 		if(mapType=="" or mapType=="map.png" or mapType[:7]=="map.png"):
@@ -440,8 +466,10 @@ def winPredictor():
 		tPreFetch = time.time()
 		tEst = 0
 		
+		logHeadless("Downloading player statistics...");
 		if MULTITHREADED:
-			print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
+			if not HEADLESS_MODE:
+				print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
 			with ThreadPoolExecutor(max_workers=4) as executor:
 				for team in composition:
 					print("\nGetting stats for players on %s team (%d)..." % (team, len(composition[team]["players"])))
@@ -467,6 +495,7 @@ def winPredictor():
 		
 		tPostFetch = time.time()
 		
+		logHeadless("Compiling and computing statistics...");
 		gstats["largest_kd"] = ["Nobody", 0]
 		gstats["largest_adjusted_kd"] = ["Nobody", 0]
 		gstats["most_kills_per_hour"] = ["Nobody", 0]
@@ -734,6 +763,7 @@ def winPredictor():
 			elif mapType == "mixed":
 				composition[team]["stats"]["raw_score"] = 0.5*composition[team]["stats"]["average_kd"] + 0.1*composition[team]["stats"]["average_monuments_per_hour"] + 0.1*composition[team]["stats"]["average_wools_per_hour"] + 0.1*composition[team]["stats"]["average_cores_per_hour"] + 0.2*composition[team]["stats"]["average_kills_per_game"]
 			else:
+				mapType = "UNKNOWN"
 				print("[*] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
 				composition[team]["stats"]["raw_score"] = 1.0*composition[team]["stats"]["average_khpdg"]
 			
@@ -795,6 +825,10 @@ def winPredictor():
 			else:
 				os.system("clear")
 			
+			if HEADLESS_MODE:
+				print("All standard output now moved to `output.log`.")
+				sys.stdout = open("output.log", 'a')
+			
 			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
 			
 			tTotal = tPostCalc - tPreFetch
@@ -838,11 +872,11 @@ def winPredictor():
 			for team in composition:
 				scoreTotal += composition[team]["stats"]["adjusted_score"]
 				if composition[team]["stats"]["adjusted_score"] > winner[1]:
-					assuredness_index = composition[team]["stats"]["adjusted_score"] / (composition[team]["stats"]["adjusted_score"] + winner[1])
+					assuredness_index = composition[team]["stats"]["adjusted_score"] / (1 if composition[team]["stats"]["adjusted_score"]==0 else composition[team]["stats"]["adjusted_score"] + winner[1])
 					winner[0] = team
 					winner[1] = composition[team]["stats"]["adjusted_score"]
 				else:
-					assuredness_index = winner[1] / (composition[team]["stats"]["adjusted_score"] + winner[1])
+					assuredness_index = winner[1] / (1 if composition[team]["stats"]["adjusted_score"]==0 else composition[team]["stats"]["adjusted_score"] + winner[1])
 			
 			print("\n")
 			for team in composition:
@@ -854,6 +888,10 @@ def winPredictor():
 				print("\nI am very sure that %s will win with a %.2f%% player stat accuracy and a high decision accuracy (%.2f%%)." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
 			else:
 				print("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
+			
+			if HEADLESS_MODE:
+				sys.stdout = sys.__stdout__
+				print("Standard output recovered.")
 			
 		else:
 			print("[*] The team list is empty and therefore no stats can be found!")
@@ -904,14 +942,40 @@ def main():
 	print("Goodbye.")
 	exit(False)
 
-def exit(pause = True):
-	if pause:
-		os.system("read _ > /dev/null" if UNIX else "pause > nul")
-	sys.exit(0)
-
 if __name__ == '__main__':
 	try:
-		main()
+		if HEADLESS_MODE:
+			print("Headless mode is enabled. Events will be recorded to `output.log`. Keyboard terminate / pkill if the loop gets messy.")
+			logHeadless("", False)
+			
+			lastMatch = ""
+			waitCycle = 30
+			while(True):
+				latestMatch = str(getLatestMatch())
+				if latestMatch==lastMatch:
+					print("[%s] No match difference. Pinging again in %i seconds..." % (datetime.now().isoformat(), waitCycle))
+					time.sleep(waitCycle)
+					if waitCycle < 300:
+						waitCycle += 1
+				else:
+					waitCycle = 30
+					lastMatch = latestMatch
+					
+					if not UNIX:
+						os.system("cls")
+					else:
+						os.system("clear")
+					
+					print("Cycle beginning.")
+					time.sleep(20 if DELAY==0 else DELAY)
+					logHeadless("Cycle start time: ", False, 'w')
+					logHeadless(datetime.now().isoformat())
+					winPredictor(lastMatch)
+					copyfile('output.log', 'complete_output.log')
+					print("Cycle complete. Running again in 60 seconds...")
+					time.sleep(60)
+		else:
+			main()
 	except KeyboardInterrupt:
 		print("\n\nTerminating.")
 		sys.exit(0)
