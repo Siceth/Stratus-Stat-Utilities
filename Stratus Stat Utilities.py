@@ -12,7 +12,7 @@ VERSION = "1.1"
 MULTITHREADED = True
 MIRROR = "https://stats.seth-phillips.com/stratus/"
 DELAY = 15
-HEADLESS_MODE = True
+HEADLESS_MODE = False
 
 # END CONFIG
 
@@ -968,9 +968,9 @@ if __name__ == '__main__':
 						os.system("clear")
 					
 					print("Cycle beginning.")
-					time.sleep(20 if DELAY==0 else DELAY)
 					logHeadless("Cycle start time: ", False, 'w')
 					logHeadless(datetime.now().isoformat())
+					time.sleep(20 if DELAY==0 else DELAY)
 					winPredictor(lastMatch)
 					copyfile('output.log', 'complete_output.log')
 					print("Cycle complete. Running again in 60 seconds...")
