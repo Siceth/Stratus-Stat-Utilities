@@ -882,9 +882,9 @@ def winPredictor(match = ""):
 			for team in composition:
 				print("%s has a %.2f%% chance of winning." % (team.title(), (composition[team]["stats"]["adjusted_score"]*100 / (1 if scoreTotal is 0 else scoreTotal))))
 			
-			if assuredness_index < 0.5 or gstats["average_reliability_index"] < 0.4:
+			if assuredness_index < 0.525 or gstats["average_reliability_index"] < 0.4:
 				print("\nIt's too hard to tell who will win this game due to a low player stat accuracy (%.2f%%) or a low decision accuracy (%.2f%%)." % (gstats["average_reliability_index"]*100, assuredness_index*100))
-			elif assuredness_index > 0.9 and gstats["average_reliability_index"] > 0.7:
+			elif assuredness_index > 0.825 and gstats["average_reliability_index"] > 0.7:
 				print("\nI am very sure that %s will win with a %.2f%% player stat accuracy and a high decision accuracy (%.2f%%)." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
 			else:
 				print("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
