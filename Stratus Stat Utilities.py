@@ -69,6 +69,18 @@ except ImportError:
 	print("Your system is missing BeautifulSoup. Please run `easy_install beautifulsoup4` or `pip install beautifulsoup4` before executing.")
 	exit()
 
+class Unbuffered(object):
+	def __init__(self, stream):
+		self.stream = stream
+	def write(self, data):
+		self.stream.write(data)
+		self.stream.flush()
+	def writelines(self, datas):
+		self.stream.writelines(datas)
+		self.stream.flush()
+	def __getattr__(self, attr):
+		return getattr(self.stream, attr)
+
 def logHeadless(data, newLine = True, mode = 'a'):
 	global HEADLESS_MODE
 	if HEADLESS_MODE:
@@ -827,7 +839,7 @@ def winPredictor(match = ""):
 			
 			if HEADLESS_MODE:
 				print("All standard output now moved to `output.log`.")
-				sys.stdout = open("output.log", 'a')
+				sys.stdout = Unbuffered(open("output.log", 'a'))
 				print(";;;");
 			
 			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
