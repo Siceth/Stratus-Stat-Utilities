@@ -399,7 +399,7 @@ def getLatestMatch():
 		exit()
 	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:])
 
-def winPredictor(match = ""):
+def winPredictor(match = "", cycleStart = ""):
 	global MULTITHREADED, DELAY, HEADLESS_MODE
 	
 	if not HEADLESS_MODE:
@@ -832,16 +832,19 @@ def winPredictor(match = ""):
 			else:
 				os.system("clear")
 			
-			output(";;;");
+			logHeadless(";;;")
 			
 			output("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
 			
 			tTotal = tPostCalc - tPreFetch
+			if cycleStart!="":
+				output("Cycle start time: %s" % cycleStart)
 			output("Program took %.2fs to fetch base player statistics and %.5fs to calculate all other statistics, totaling %.2fs." % (tPostFetch - tPreFetch, tPostCalc - tPostFetch, tTotal))
 			output("Expected total run time was %.2fs." % tEst)
 			output("Latency margin of error is %.2f%%." % abs((tEst - tTotal) * 100 / tTotal))
 			
 			output("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n         Global Statistics         \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+			output("Map name: %s" % mapName)
 			output("Detected map type: %s" % mapType.upper())
 			for stat in gstats:
 				if isinstance(gstats[stat], list):
@@ -967,10 +970,11 @@ if __name__ == '__main__':
 						os.system("clear")
 					
 					print("Cycle beginning.")
+					cycleStart = datetime.now().isoformat()
 					logHeadless("Cycle start time: ", False, 'w')
-					logHeadless(datetime.now().isoformat())
+					logHeadless(cycleStart)
 					time.sleep(20 if DELAY==0 else DELAY)
-					winPredictor(lastMatch)
+					winPredictor(lastMatch, cycleStart)
 					copyfile('output.log', 'complete_output.log')
 					print("Cycle complete. Running again in 60 seconds...")
 					time.sleep(60)
