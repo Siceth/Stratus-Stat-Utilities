@@ -69,23 +69,18 @@ except ImportError:
 	print("Your system is missing BeautifulSoup. Please run `easy_install beautifulsoup4` or `pip install beautifulsoup4` before executing.")
 	exit()
 
-class Unbuffered(object):
-	def __init__(self, stream):
-		self.stream = stream
-	def write(self, data):
-		self.stream.write(data)
-		self.stream.flush()
-	def writelines(self, datas):
-		self.stream.writelines(datas)
-		self.stream.flush()
-	def __getattr__(self, attr):
-		return getattr(self.stream, attr)
-
 def logHeadless(data, newLine = True, mode = 'a'):
 	global HEADLESS_MODE
 	if HEADLESS_MODE:
 		with open("output.log", mode) as f:
 			f.write(data + ('\n' if newLine else ''))
+
+def output(data):
+	global HEADLESS_MODE
+	if HEADLESS_MODE:
+		logHeadless(data)
+	else:
+		print(data)
 
 def exit(pause = True):
 	if pause:
@@ -837,33 +832,30 @@ def winPredictor(match = ""):
 			else:
 				os.system("clear")
 			
-			if HEADLESS_MODE:
-				print("All standard output now moved to `output.log`.")
-				sys.stdout = Unbuffered(open("output.log", 'a'))
-				print(";;;");
+			output(";;;");
 			
-			print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+			output("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n          Meta Statistics          \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
 			
 			tTotal = tPostCalc - tPreFetch
-			print("Program took %.2fs to fetch base player statistics and %.5fs to calculate all other statistics, totaling %.2fs." % (tPostFetch - tPreFetch, tPostCalc - tPostFetch, tTotal))
-			print("Expected total run time was %.2fs." % tEst)
-			print("Latency margin of error is %.2f%%." % abs((tEst - tTotal) * 100 / tTotal))
+			output("Program took %.2fs to fetch base player statistics and %.5fs to calculate all other statistics, totaling %.2fs." % (tPostFetch - tPreFetch, tPostCalc - tPostFetch, tTotal))
+			output("Expected total run time was %.2fs." % tEst)
+			output("Latency margin of error is %.2f%%." % abs((tEst - tTotal) * 100 / tTotal))
 			
-			print("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n         Global Statistics         \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
-			print("Detected map type: %s" % mapType.upper())
+			output("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n         Global Statistics         \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+			output("Detected map type: %s" % mapType.upper())
 			for stat in gstats:
 				if isinstance(gstats[stat], list):
 					if isinstance(gstats[stat][1], float):
-						print("%s: %s (%.2f)" % (stat.replace('_', ' ').title(), gstats[stat][0], gstats[stat][1]))
+						output("%s: %s (%.2f)" % (stat.replace('_', ' ').title(), gstats[stat][0], gstats[stat][1]))
 					else:
-						print("%s: %s (%s)" % (stat.replace('_', ' ').title(), gstats[stat][0], gstats[stat][1]))
+						output("%s: %s (%s)" % (stat.replace('_', ' ').title(), gstats[stat][0], gstats[stat][1]))
 				else:
 					if isinstance(gstats[stat], float):
-						print("%s: %.2f" % (stat.replace('_', ' ').title(), gstats[stat]))
+						output("%s: %.2f" % (stat.replace('_', ' ').title(), gstats[stat]))
 					else:
-						print("%s: %s" % (stat.replace('_', ' ').title(), gstats[stat]))
+						output("%s: %s" % (stat.replace('_', ' ').title(), gstats[stat]))
 			
-			print(("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for Current Match \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n") if match.replace(' ', '')=="" else ("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for %s \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n" % match))
+			output(("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for Current Match \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n") if match.replace(' ', '')=="" else ("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for %s \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n" % match))
 			
 			tableHeaders = [x.title() for x in composition]
 			tableHeaders.insert(0, "")
@@ -877,7 +869,7 @@ def winPredictor(match = ""):
 						substat.append(composition[team]["stats"][stat])
 					tableData.append(substat)
 			
-			print(tabulate(tableData, headers=tableHeaders))
+			output(tabulate(tableData, headers=tableHeaders))
 			
 			scoreTotal = 0
 			winner = ["nobody", 0]
@@ -891,23 +883,18 @@ def winPredictor(match = ""):
 				else:
 					assuredness_index = winner[1] / (1 if composition[team]["stats"]["adjusted_score"]==0 else composition[team]["stats"]["adjusted_score"] + winner[1])
 			
-			print("\n")
+			output("\n")
 			for team in composition:
-				print("%s has a %.2f%% chance of winning." % (team.title(), (composition[team]["stats"]["adjusted_score"]*100 / (1 if scoreTotal is 0 else scoreTotal))))
+				output("%s has a %.2f%% chance of winning." % (team.title(), (composition[team]["stats"]["adjusted_score"]*100 / (1 if scoreTotal is 0 else scoreTotal))))
 			
 			if assuredness_index < 0.525 or gstats["average_reliability_index"] < 0.4:
-				print("\nIt's too hard to tell who will win this game due to a low player stat accuracy (%.2f%%) or a low decision accuracy (%.2f%%)." % (gstats["average_reliability_index"]*100, assuredness_index*100))
+				output("\nIt's too hard to tell who will win this game due to a low player stat accuracy (%.2f%%) or a low decision accuracy (%.2f%%)." % (gstats["average_reliability_index"]*100, assuredness_index*100))
 			elif assuredness_index > 0.825 and gstats["average_reliability_index"] > 0.7:
-				print("\nI am very sure that %s will win with a %.2f%% player stat accuracy and a high decision accuracy (%.2f%%)." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
+				output("\nI am very sure that %s will win with a %.2f%% player stat accuracy and a high decision accuracy (%.2f%%)." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
 			else:
-				print("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
-			
-			if HEADLESS_MODE:
-				sys.stdout = sys.__stdout__
-				print("Standard output recovered.")
-			
+				output("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"]*100, assuredness_index*100))
 		else:
-			print("[*] The team list is empty and therefore no stats can be found!")
+			output("[*] The team list is empty and therefore no stats can be found!")
 	else:
 		print("\nAborted. Press any key to continue.")
 
