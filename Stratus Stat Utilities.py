@@ -457,7 +457,7 @@ def winPredictor(match = "", cycleStart = ""):
 				print("Please specify a \"yes\" or \"no\":")
 	
 	if mapExists:
-		teamRow = matchPage.findAll("div", {"class": "row"})[2]
+		teamRow = matchPage.findAll("div", {"class": "row"})[3]		
 		players = list()
 		gstats = dict()
 		composition = dict()
