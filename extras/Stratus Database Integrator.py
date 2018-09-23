@@ -61,7 +61,7 @@ stats = {}
 
 for player in players:
 	print("Processing %s..." % player)
-	playerPage = BS(open(config["Integrator"]["path"] + "/" + player), "html.parser")	
+	playerPage = BS(open(config["Integrator"]["path"] + "/" + player, encoding="utf-8"), "html.parser")	
 	stats[player] = {}
 	
 	stats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]

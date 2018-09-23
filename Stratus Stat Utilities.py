@@ -142,7 +142,7 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 		
 		try:
 			# Raw stats
-			stats[player]["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
+			stats["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
 			
 			data = playerPage.findAll("div", {"class": "number"})
 			if len(data) >= 7:
