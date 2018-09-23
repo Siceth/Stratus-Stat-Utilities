@@ -142,6 +142,8 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 		
 		try:
 			# Raw stats
+			stats[player]["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
+			
 			data = playerPage.findAll("div", {"class": "number"})
 			if len(data) >= 7:
 				stats["kills"] = int(data[0].get_text())
@@ -162,7 +164,7 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 			
 			data = playerPage.findAll("h2")
 			if len(data) > 0:
-				stats["username"] = re.sub(r"\(.*\)", '', data[0].get_text()).replace(' ', '')
+				stats["username"] = BS(str(data[0]), "lxml").findAll("span")[0].get_text().replace('\n', '').replace(' ', '')
 			if len(data) > 3:
 				for matches in data:
 					subs = BS(str(matches), "lxml").findAll("small", {"class": "strong"})
