@@ -166,8 +166,10 @@ for player in players:
 			joined = (datetime.date.today() - datetime.datetime.strptime(stats[player]["first_joined"], "%Y-%m-%d").date()).days
 			stats[player]["percent_time_spent_on_stratus"] = 0 if joined < 7 else (stats[player]["hours_played"] * 100 / (24 if joined==0 else (joined * 24)))
 			stats[player]["percent_waking_time_spent_on_stratus"] = 0 if joined < 7 else (stats[player]["hours_played"] * 100 / (16 if joined==0 else (joined * 16)))
-			stats[player]["percent_droplets_are_kills"] = stats[player]["kills"] * 100 / (1 if stats[player]["droplets"]==0 else stats[player]["droplets"])
-			stats[player]["percent_droplets_are_objectives"] = 100 - stats[player]["percent_droplets_are_kills"]
+			
+			# Unfortunately these stats have to retire since droplets can be spent, which can result in negative objective percentages.
+			#stats[player]["percent_droplets_are_kills"] = stats[player]["kills"] * 100 / (1 if stats[player]["droplets"]==0 else stats[player]["droplets"])
+			#stats[player]["percent_droplets_are_objectives"] = 100 - stats[player]["percent_droplets_are_kills"]
 			
 			# Merit is based on hours played on a scale to account for veteran players that idle. Using inverse regression
 			# analysis, the above formula was found so that the stats of a user that has only played for less than an hour

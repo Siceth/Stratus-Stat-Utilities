@@ -244,8 +244,10 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 				# Percents, expressed out of 100
 				stats["percent_time_spent_on_stratus"] = 0 if stats["first_joined_days_ago"] < 7 else (stats["hours_played"] * 100 / (24 if stats["first_joined_days_ago"]==0 else (stats["first_joined_days_ago"] * 24)))
 				stats["percent_waking_time_spent_on_stratus"] = 0 if stats["first_joined_days_ago"] < 7 else (stats["hours_played"] * 100 / (16 if stats["first_joined_days_ago"]==0 else (stats["first_joined_days_ago"] * 16)))
-				stats["percent_droplets_are_kills"] = stats["kills"] * 100 / (1 if stats["droplets"]==0 else stats["droplets"])
-				stats["percent_droplets_are_objectives"] = 100 - stats["percent_droplets_are_kills"]
+				
+				# Unfortunately these stats have to retire since droplets can be spent, which can result in negative objective percentages.
+				#stats["percent_droplets_are_kills"] = stats["kills"] * 100 / (1 if stats["droplets"]==0 else stats["droplets"])
+				#stats["percent_droplets_are_objectives"] = 100 - stats["percent_droplets_are_kills"]
 				
 				# Merit is based on hours played on a scale to account for veteran players that idle. Using inverse regression
 				# analysis, the above formula was found so that the stats of a user that has only played for less than an hour
