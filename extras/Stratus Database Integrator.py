@@ -5,6 +5,12 @@ import os
 import re
 import time
 
+# START CONFIG
+
+VERBOSE_OUTPUT = False
+
+# END CONFIG
+
 try:
 	import dateparser
 except ImportError:
@@ -61,7 +67,10 @@ players.sort()
 stats = {}
 
 for player in players:
-	print("Processing %s..." % player)
+	if VERBOSE_OUTPUT:
+		print("Processing %s..." % player)
+	else:
+		print(player)
 	playerPage = BS(open(config["Integrator"]["path"] + "/" + player, encoding="utf-8"), "html.parser")	
 	stats[player] = {}
 	stats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]
@@ -195,11 +204,14 @@ for player in players:
 		except Exception as e:
 			print("[*] Error translating web cache info! Did the website's page layout change?\nError:" + e)
 		
-		print("Adding to database...")
+		if VERBOSE_OUTPUT:
+			print("Adding to database...")
 		qr = runQuery("INSERT INTO players (" + (", ".join(_mysql.escape_string(x).decode("utf-8") for x in stats[player].keys())) + ") VALUES(" + (", ".join(("\"" + _mysql.escape_string(str(x)).decode("utf-8") + "\"" if isinstance(x, str) else _mysql.escape_string(str(x)).decode("utf-8")) for x in stats[player].values())) + ") ON DUPLICATE KEY UPDATE " + (", ".join(["{}={}{}{}".format(_mysql.escape_string(k).decode("utf-8"),("\"" if isinstance(v, str) else ""),_mysql.escape_string(str(v)).decode("utf-8"),("\"" if isinstance(v, str) else "")) for k,v in stats[player].items()])))
 		
-		print("Done.")
+		if VERBOSE_OUTPUT:
+			print("Done.")
 	else:
-		print("No updates.")
+		if VERBOSE_OUTPUT:
+			print("No updates.")
 
 db.close()
