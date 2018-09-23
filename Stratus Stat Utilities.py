@@ -179,6 +179,9 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 							elif sub.text.lower()=="wools placed":
 								stats["wools"] = int(re.sub("\D", "", matches.get_text()))
 								break
+							elif sub.text.lower()=="flags captured":
+								stats["flags"] = int(re.sub("\D", "", matches.get_text()))
+								break
 			if "username" not in stats:
 				stats["username"] = player
 			if "monuments" not in stats:
@@ -187,6 +190,8 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 				stats["wools"] = 0
 			if "cores" not in stats:
 				stats["cores"] = 0
+			if "flags" not in stats:
+				stats["flags"] = 0
 			
 			data = playerPage.findAll("section")
 			if len(data) > 0:
@@ -232,6 +237,7 @@ def getPlayerStats(player, doCalculations = True, forceRenew = True):
 				stats["average_deaths_per_hour"] = stats["deaths"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
 				stats["average_monuments_per_hour"] = stats["monuments"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
 				stats["average_wools_per_hour"] = stats["wools"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
+				stats["average_flags_per_hour"] = stats["flags"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
 				stats["average_cores_per_hour"] = stats["cores"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
 				stats["average_droplets_per_hour"] = stats["droplets"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
 				stats["average_new_friends_per_hour"] = stats["friends"] / (1 if stats["hours_played"]==0 else stats["hours_played"])
@@ -522,6 +528,7 @@ def winPredictor(match = "", cycleStart = ""):
 		gstats["most_trophies"] = ["Nobody", 0]
 		
 		gstats["top_monuments_per_hour"] = ["Nobody", 0]
+		gstats["top_flags_per_hour"] = ["Nobody", 0]
 		gstats["top_wools_per_hour"] = ["Nobody", 0]
 		gstats["top_cores_per_hour"] = ["Nobody", 0]
 		gstats["top_droplets_per_hour"] = ["Nobody", 0]
@@ -551,6 +558,7 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["total_friends"] = 0
 			composition[team]["stats"]["total_droplets"] = 0
 			composition[team]["stats"]["total_monuments"] = 0
+			composition[team]["stats"]["total_flags"] = 0
 			composition[team]["stats"]["total_wools"] = 0
 			composition[team]["stats"]["total_cores"] = 0
 			composition[team]["stats"]["total_staff"] = 0
@@ -564,6 +572,7 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["total_average_kills_per_hour"] = 0
 			composition[team]["stats"]["total_average_deaths_per_hour"] = 0
 			composition[team]["stats"]["total_average_monuments_per_hour"] = 0
+			composition[team]["stats"]["total_average_flags_per_hour"] = 0
 			composition[team]["stats"]["total_average_wools_per_hour"] = 0
 			composition[team]["stats"]["total_average_cores_per_hour"] = 0
 			composition[team]["stats"]["total_average_droplets_per_hour"] = 0
@@ -585,8 +594,8 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["nonce_total_kd_error"] = 0
 			composition[team]["stats"]["nonce_total_percent_time_spent_on_stratus"] = 0
 			composition[team]["stats"]["nonce_total_percent_waking_time_spent_on_stratus"] = 0
-			composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] = 0
-			composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] = 0
+			#composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] = 0
+			#composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] = 0
 			
 			for player, pstats in composition[team]["players"].items():
 				composition[team]["stats"]["total_kills"] += pstats["kills"]
@@ -595,6 +604,7 @@ def winPredictor(match = "", cycleStart = ""):
 				composition[team]["stats"]["total_droplets"] += pstats["droplets"]
 				composition[team]["stats"]["total_monuments"] += pstats["monuments"]
 				composition[team]["stats"]["total_wools"] += pstats["wools"]
+				composition[team]["stats"]["total_flags"] += pstats["flags"]
 				composition[team]["stats"]["total_cores"] += pstats["cores"]
 				composition[team]["stats"]["total_staff"] += 1 if pstats["staff"] else 0
 				composition[team]["stats"]["total_donors"] += 1 if pstats["donor"] else 0
@@ -606,6 +616,7 @@ def winPredictor(match = "", cycleStart = ""):
 				composition[team]["stats"]["total_average_kills_per_hour"] += pstats["average_kills_per_hour"]
 				composition[team]["stats"]["total_average_deaths_per_hour"] += pstats["average_deaths_per_hour"]
 				composition[team]["stats"]["total_average_monuments_per_hour"] += pstats["average_monuments_per_hour"]
+				composition[team]["stats"]["total_average_flags_per_hour"] += pstats["average_flags_per_hour"]
 				composition[team]["stats"]["total_average_wools_per_hour"] += pstats["average_wools_per_hour"]
 				composition[team]["stats"]["total_average_cores_per_hour"] += pstats["average_cores_per_hour"]
 				composition[team]["stats"]["total_average_droplets_per_hour"] += pstats["average_droplets_per_hour"]
@@ -627,8 +638,8 @@ def winPredictor(match = "", cycleStart = ""):
 				composition[team]["stats"]["nonce_total_kd_error"] += pstats["kd_error"]
 				composition[team]["stats"]["nonce_total_percent_time_spent_on_stratus"] += pstats["percent_time_spent_on_stratus"]
 				composition[team]["stats"]["nonce_total_percent_waking_time_spent_on_stratus"] += pstats["percent_waking_time_spent_on_stratus"]
-				composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] += pstats["percent_droplets_are_kills"]
-				composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] += pstats["percent_droplets_are_objectives"]
+				#composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] += pstats["percent_droplets_are_kills"]
+				#composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] += pstats["percent_droplets_are_objectives"]
 				
 				if pstats["kd"] > gstats["largest_kd"][1]:
 					gstats["largest_kd"][0] = pstats["username"]
@@ -676,6 +687,9 @@ def winPredictor(match = "", cycleStart = ""):
 				if pstats["average_wools_per_hour"] > gstats["top_wools_per_hour"][1]:
 					gstats["top_wools_per_hour"][0] = pstats["username"]
 					gstats["top_wools_per_hour"][1] = pstats["average_wools_per_hour"]
+				if pstats["average_flags_per_hour"] > gstats["top_flags_per_hour"][1]:
+					gstats["top_flags_per_hour"][0] = pstats["username"]
+					gstats["top_flags_per_hour"][1] = pstats["average_flags_per_hour"]
 				if pstats["average_cores_per_hour"] > gstats["top_cores_per_hour"][1]:
 					gstats["top_cores_per_hour"][0] = pstats["username"]
 					gstats["top_cores_per_hour"][1] = pstats["average_cores_per_hour"]
@@ -723,6 +737,7 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["average_droplets"] = composition[team]["stats"]["total_droplets"] / teamSize
 			composition[team]["stats"]["average_username_length"] = composition[team]["stats"]["nonce_total_username_length"] / teamSize
 			composition[team]["stats"]["average_monuments"] = composition[team]["stats"]["total_monuments"] / teamSize
+			composition[team]["stats"]["average_flags"] = composition[team]["stats"]["total_flags"] / teamSize
 			composition[team]["stats"]["average_wools"] = composition[team]["stats"]["total_wools"] / teamSize
 			composition[team]["stats"]["average_cores"] = composition[team]["stats"]["total_cores"] / teamSize
 			composition[team]["stats"]["average_first_joined_days_ago"] = composition[team]["stats"]["nonce_total_first_joined_days_ago"] / teamSize
@@ -734,6 +749,7 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["average_kills_per_hour"] = composition[team]["stats"]["total_average_kills_per_hour"] / teamSize
 			composition[team]["stats"]["average_deaths_per_hour"] = composition[team]["stats"]["total_average_deaths_per_hour"] / teamSize
 			composition[team]["stats"]["average_monuments_per_hour"] = composition[team]["stats"]["total_average_monuments_per_hour"] / teamSize
+			composition[team]["stats"]["average_flags_per_hour"] = composition[team]["stats"]["total_average_flags_per_hour"] / teamSize
 			composition[team]["stats"]["average_wools_per_hour"] = composition[team]["stats"]["total_average_wools_per_hour"] / teamSize
 			composition[team]["stats"]["average_cores_per_hour"] = composition[team]["stats"]["total_average_cores_per_hour"] / teamSize
 			composition[team]["stats"]["average_droplets_per_hour"] = composition[team]["stats"]["total_average_droplets_per_hour"] / teamSize
@@ -742,8 +758,8 @@ def winPredictor(match = "", cycleStart = ""):
 			composition[team]["stats"]["average_kills_per_game"] = composition[team]["stats"]["total_average_kills_per_game"] / teamSize
 			composition[team]["stats"]["average_percent_time_spent_on_stratus"] = composition[team]["stats"]["nonce_total_percent_time_spent_on_stratus"] / teamSize
 			composition[team]["stats"]["average_percent_waking_time_spent_on_stratus"] = composition[team]["stats"]["nonce_total_percent_waking_time_spent_on_stratus"] / teamSize
-			composition[team]["stats"]["average_percent_droplets_are_kills"] = composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] / teamSize
-			composition[team]["stats"]["average_percent_droplets_are_objectives"] = composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] / teamSize
+			#composition[team]["stats"]["average_percent_droplets_are_kills"] = composition[team]["stats"]["nonce_total_percent_droplets_are_kills"] / teamSize
+			#composition[team]["stats"]["average_percent_droplets_are_objectives"] = composition[team]["stats"]["nonce_total_percent_droplets_are_objectives"] / teamSize
 			composition[team]["stats"]["average_time_based_merit"] = composition[team]["stats"]["nonce_total_time_based_merit"] / teamSize
 			composition[team]["stats"]["average_kill_based_merit"] = composition[team]["stats"]["nonce_total_kill_based_merit"] / teamSize
 			composition[team]["stats"]["average_merit"] = composition[team]["stats"]["nonce_total_merit"] / teamSize
@@ -755,7 +771,7 @@ def winPredictor(match = "", cycleStart = ""):
 			elif mapType == "ctw":
 				composition[team]["stats"]["raw_score"] = 0.6*composition[team]["stats"]["average_kd"] + 0.4*composition[team]["stats"]["average_wools_per_hour"]
 			elif mapType == "ctf":
-				composition[team]["stats"]["raw_score"] = composition[team]["stats"]["average_khpdg"]
+				composition[team]["stats"]["raw_score"] = 0.6*composition[team]["stats"]["average_khpdg"] + 0.4*composition[team]["stats"]["average_flags_per_hour"]
 			elif mapType == "dtc":
 				composition[team]["stats"]["raw_score"] = 0.6*composition[team]["stats"]["average_kd"] + 0.4*composition[team]["stats"]["average_cores_per_hour"]
 			elif mapType == "dtm":

@@ -56,17 +56,25 @@ def runQuery(query):
 donorRanks = ["strato", "alto", "cirro"]
 staffRanks = ["administrator", "developer", "senior moderator", "junior developer", "moderator", "map developer", "event coordinator", "official"]
 
-players = (player for player in os.listdir(config["Integrator"]["path"]) if os.path.isfile(os.path.join(config["Integrator"]["path"], player)))
+players = list(player for player in os.listdir(config["Integrator"]["path"]) if os.path.isfile(os.path.join(config["Integrator"]["path"], player)))
+players.sort()
 stats = {}
 
 for player in players:
 	print("Processing %s..." % player)
 	playerPage = BS(open(config["Integrator"]["path"] + "/" + player, encoding="utf-8"), "html.parser")	
 	stats[player] = {}
-	
 	stats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]
+	
+	statsVerifier = playerPage.findAll("li", {"class": "active dropdown"})
+	if len(statsVerifier)==0 or statsVerifier[0].findAll("a")[0].get_text().replace('\n', '').replace(' ', '')!="Players":
+		print("[!] Skipping non-player page \"%s\"" % player)
+		continue
+	if len(player) > 16:
+		print("[!] Invalid player name \"%s\"" % player)
+		continue
+	
 	qr = runQuery("SELECT cached FROM `players` WHERE username=\"" + _mysql.escape_string(player).decode("utf-8") + "\" LIMIT 1").fetch_row(maxrows=1, how=1)
-	update = True
 	if len(qr)==0 or qr[0]["cached"]!=stats[player]["cached"]:
 		try:
 			# Raw Stats
