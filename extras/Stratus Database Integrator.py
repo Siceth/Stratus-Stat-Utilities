@@ -1,6 +1,7 @@
 import datetime
 import configparser
 import glob
+import inspect
 import os
 import re
 import time
@@ -40,7 +41,7 @@ except ImportError:
 
 try:
 	config = configparser.ConfigParser()
-	config.read('config.ini')
+	config.read(str(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))) + '/config.ini')
 except:
 	print("Configuration file missing or unreadable!")
 	exit()
