@@ -8,7 +8,7 @@ import time
 
 # START CONFIG
 
-VERBOSE_OUTPUT = False
+VERBOSE_OUTPUT = True
 
 # END CONFIG
 
@@ -70,13 +70,11 @@ stats = {}
 qrPlayers = runQuery("SELECT username,cached FROM `players`").fetch_row(maxrows=0, how=1)
 playerCache = {}
 for v in qrPlayers:
-	playerCache[v['username'].decode("utf-8")] = v['cached']
+	playerCache[str(v['username'].decode("utf-8")).lower()] = v['cached']
 
 for player in players:
 	if VERBOSE_OUTPUT:
 		print("Processing %s..." % player)
-	else:
-		print(player)
 	playerPage = BS(open(config["Integrator"]["path"] + "/" + player, encoding="utf-8"), "html.parser")
 	
 	statsVerifier = playerPage.findAll("li", {"class": "active dropdown"})
@@ -90,7 +88,7 @@ for player in players:
 	stats[player] = {}
 	stats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]
 	
-	if player not in playerCache or playerCache[player]!=stats[player]["cached"]:
+	if player not in playerCache or playerCache[str(player).lower()]!=stats[player]["cached"]:
 		try:
 			# Raw Stats
 			stats[player]["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
