@@ -9,6 +9,7 @@ import time
 # START CONFIG
 
 VERBOSE_OUTPUT = True
+DELETE_INVALID_PAGES = True
 
 # END CONFIG
 
@@ -60,6 +61,13 @@ def runQuery(query):
 		print("[*] Can't run query:\n=-=-=\n%s\n=-=-=\n" % query)
 		exit()
 
+def deleteFile(path):
+	try:
+		os.remove(path)
+		print(" - Deleted")
+	except:
+		print("[!] Couldn't delete file at \"%s\"." % path)
+
 donorRanks = ["strato", "alto", "cirro"]
 staffRanks = ["administrator", "developer", "senior moderator", "junior developer", "moderator", "map developer", "event coordinator", "official"]
 
@@ -80,9 +88,13 @@ for player in players:
 	statsVerifier = playerPage.findAll("li", {"class": "active dropdown"})
 	if len(statsVerifier)==0 or statsVerifier[0].findAll("a")[0].get_text().replace('\n', '').replace(' ', '')!="Players":
 		print("[!] Skipping non-player page \"%s\"" % player)
+		if DELETE_INVALID_PAGES:
+			deleteFile(config["Integrator"]["path"] + "/" + player)
 		continue
 	if len(player) > 16:
 		print("[!] Invalid player name \"%s\"" % player)
+		if DELETE_INVALID_PAGES:
+			deleteFile(config["Integrator"]["path"] + "/" + player)
 		continue
 	
 	stats[player] = {}
