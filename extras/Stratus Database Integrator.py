@@ -4,14 +4,30 @@ import glob
 import inspect
 import os
 import re
+import sys
 import time
 
 # START CONFIG
 
 VERBOSE_OUTPUT = True
+LOG_VERBOSITY = True
 DELETE_INVALID_PAGES = True
+FAILURE_THRESHOLD = 25
 
 # END CONFIG
+
+class Tee:
+	def __init__(self, out1, out2):
+		self.out1 = out1
+		self.out2 = out2
+	def write(self, *args, **kwargs):
+		self.out1.write(*args, **kwargs)
+		self.out2.write(*args, **kwargs)
+	def flush(self):
+		pass
+
+if(LOG_VERBOSITY):
+	sys.stdout = Tee(open("./Stratus Database Integrator.log", "w"), sys.stdout)
 
 try:
 	import dateparser
@@ -48,18 +64,24 @@ except:
 	exit()
 
 try:
+	if VERBOSE_OUTPUT:
+		print("Connecting to database...")
 	db = _mysql.connect(host=config["MySQL"]["host"], user=config["MySQL"]["username"], passwd=config["MySQL"]["password"], db=config["MySQL"]["database"], conv={ FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int, FIELD_TYPE.CHAR: bool })
 except:
 	print("[*] Can't connect to database!")
 	exit()
 
 def runQuery(query):
+	global FAILURE_THRESHOLD
 	try:
 		db.query(query)
 		return db.store_result()
 	except:
 		print("[*] Can't run query:\n=-=-=\n%s\n=-=-=\n" % query)
-		exit()
+		FAILURE_THRESHOLD -= 1
+		if FAILURE_THRESHOLD==0:
+			print("[***] Too many database failures! Terminating.")
+			exit()
 
 def deleteFile(path):
 	try:
@@ -71,10 +93,14 @@ def deleteFile(path):
 donorRanks = ["strato", "alto", "cirro"]
 staffRanks = ["administrator", "developer", "senior moderator", "junior developer", "moderator", "map developer", "event coordinator", "official"]
 
+if VERBOSE_OUTPUT:
+	print("Finding players in specified directory...")
 players = list(player for player in os.listdir(config["Integrator"]["path"]) if os.path.isfile(os.path.join(config["Integrator"]["path"], player)))
 players.sort()
 stats = {}
 
+if VERBOSE_OUTPUT:
+	print("Querying and indexing database cache...")
 qrPlayers = runQuery("SELECT username,cached FROM `players`").fetch_row(maxrows=0, how=1)
 playerCache = {}
 for v in qrPlayers:
@@ -82,7 +108,7 @@ for v in qrPlayers:
 
 for player in players:
 	if VERBOSE_OUTPUT:
-		print("Processing %s..." % player)
+		print("\nProcessing %s..." % player)
 	playerPage = BS(open(config["Integrator"]["path"] + "/" + player, encoding="utf-8"), "html.parser")
 	
 	statsVerifier = playerPage.findAll("li", {"class": "active dropdown"})
@@ -217,6 +243,35 @@ for player in players:
 			
 			stats[player]["hours_until_one_million_droplets"] = 0 if stats[player]["droplets"] > 1000000 else ((1000000 - stats[player]["droplets"]) / (1 if stats[player]["average_droplets_per_hour"]==0 else stats[player]["average_droplets_per_hour"]))
 		
+			# Database cleanup -- configure based on database float allocation values
+			if stats[player]["kd"] >= 10000:
+				stats[player]["kd"] = 9999.999
+			if stats[player]["average_kills_per_hour"] >= 10000:
+				stats[player]["average_kills_per_hour"] = 9999.999
+			if stats[player]["average_deaths_per_hour"] >= 10000:
+				stats[player]["average_deaths_per_hour"] = 9999.999
+			if stats[player]["average_monuments_per_hour"] >= 10000:
+				stats[player]["average_monuments_per_hour"] = 9999.999
+			if stats[player]["average_wools_per_hour"] >= 10000:
+				stats[player]["average_wools_per_hour"] = 9999.999
+			if stats[player]["average_cores_per_hour"] >= 10000:
+				stats[player]["average_cores_per_hour"] = 9999.999
+			if stats[player]["average_flags_per_hour"] >= 10000:
+				stats[player]["average_flags_per_hour"] = 9999.999
+			if stats[player]["average_droplets_per_hour"] >= 10000000:
+				stats[player]["average_droplets_per_hour"] = 9999999.999
+			if stats[player]["average_new_friends_per_hour"] >= 10000:
+				stats[player]["average_new_friends_per_hour"] = 9999.999
+			if stats[player]["average_experienced_game_length_in_minutes"] >= 1000:
+				stats[player]["average_experienced_game_length_in_minutes"] = 999.999
+			if stats[player]["average_kills_per_game"] >= 100:
+				stats[player]["average_kills_per_game"] = 99.999
+			if stats[player]["average_kills_per_game"] >= 10:
+				stats[player]["average_kills_per_game"] = 9.999999
+			if stats[player]["percent_time_spent_on_stratus"] >= 1000:
+				stats[player]["percent_time_spent_on_stratus"] = 999.99
+			if stats[player]["percent_waking_time_spent_on_stratus"] >= 1000:
+				stats[player]["percent_waking_time_spent_on_stratus"] = 999.99
 		except Exception as e:
 			print("[*] Error translating web cache info! Did the website's page layout change?\nError:" + e)
 		
@@ -228,6 +283,8 @@ for player in players:
 			print("Done.")
 	else:
 		if VERBOSE_OUTPUT:
-			print("No updates.")
+			print("No updates. C:%s F:%s" % (playerCache[str(player).lower()], stats[player]["cached"]))
 
+if VERBOSE_OUTPUT:
+	print("Disconnecting from database; processing finished.")
 db.close()
