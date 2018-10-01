@@ -117,6 +117,12 @@ for player in players:
 		if DELETE_INVALID_PAGES:
 			deleteFile(config["Integrator"]["path"] + "/" + player)
 		continue
+	accountVerifier = playerPage.findAll("h4")
+	if len(accountVerifier)>0 and str(accountVerifier[0].get_text().replace('\n', '').replace(' ', '')).lower()=="accountsuspended":
+		print("[!] Skipping suspended account \"%s\"" % player)
+		if DELETE_INVALID_PAGES:
+			deleteFile(config["Integrator"]["path"] + "/" + player)
+		continue
 	if len(player) > 16:
 		print("[!] Invalid player name \"%s\"" % player)
 		if DELETE_INVALID_PAGES:
@@ -273,7 +279,8 @@ for player in players:
 			if stats[player]["percent_waking_time_spent_on_stratus"] >= 1000:
 				stats[player]["percent_waking_time_spent_on_stratus"] = 999.99
 		except Exception as e:
-			print("[*] Error translating web cache info! Did the website's page layout change?\nError:" + e)
+			print("[*] Error translating web cache info! Did the website's page layout change?\nError:" + str(e))
+			continue
 		
 		if VERBOSE_OUTPUT:
 			print("Adding to database...")
