@@ -13,6 +13,7 @@ MULTITHREADED = True
 MIRROR = "https://stats.seth-phillips.com/stratus/"
 DELAY = 15
 HEADLESS_MODE = False
+REALTIME_MODE = False
 
 # END CONFIG
 
@@ -487,7 +488,7 @@ def winPredictor(match = "", cycleStart = ""):
 		gstats = dict()
 		composition = dict()
 		
-		if latestMatch:
+		if latestMatch or HEADLESS_MODE:
 			logHeadless("Getting the live team structure...");
 			currentPlayers = getCurrentPlayers()
 			for team in currentPlayers:
@@ -496,7 +497,7 @@ def winPredictor(match = "", cycleStart = ""):
 				for player in currentPlayers[team]:
 					composition[team.lower()]["players"][player] = dict()
 		else:
-			logHeadless("Using the retro team structure...");
+			logHeadless("Using the legacy team structure...");
 			teamRow = matchPage.findAll("div", {"class": "row"})[3]		
 			for teamDiv in teamRow.findAll("div", {"class": "col-md-4"}):
 				teamCount = teamDiv.find("h4", {"class": "strong"}).find("small")
@@ -515,7 +516,7 @@ def winPredictor(match = "", cycleStart = ""):
 				print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
 			with ThreadPoolExecutor(max_workers=4) as executor:
 				for team in composition:
-					print("\nGetting stats for players on %s team (%d)..." % (team, len(composition[team]["players"])))
+					print("\nGetting stats for players on %s (%d)..." % (team, len(composition[team]["players"])))
 					for player in composition[team]["players"]:
 						print("Getting stats for %s..." % player)
 						composition[team]["players"][player] = executor.submit(getPlayerStats, player, True, False)
@@ -530,7 +531,7 @@ def winPredictor(match = "", cycleStart = ""):
 			for team in composition:
 				tEstTeam = len(composition[team]["players"])*2.5
 				tEst += tEstTeam
-				print("\nGetting stats for players on %s team (%d; ETA %ds)..." % (team, len(composition[team]["players"]), math.ceil(tEstTeam)))
+				print("\nGetting stats for players on %s (%d; ETA %ds)..." % (team, len(composition[team]["players"]), math.ceil(tEstTeam)))
 				for player in composition[team]["players"]:
 					print("Getting stats for %s..." % player)
 					composition[team]["players"][player] = getPlayerStats(player, True, False)
@@ -581,7 +582,7 @@ def winPredictor(match = "", cycleStart = ""):
 		gstats["cumulative_reliability_index"] = 0
 		
 		for team in composition:
-			print("\nCalculating larger statistics for %s team..." % team)
+			print("\nCalculating larger statistics for %s..." % team)
 			
 			composition[team]["stats"]["number_of_players"] = len(composition[team]["players"])
 			composition[team]["stats"]["total_kills"] = 0
@@ -1006,7 +1007,7 @@ if __name__ == '__main__':
 			waitCycle = 30
 			while True:
 				latestMatch = str(getLatestMatch())
-				if latestMatch==lastMatch:
+				if not REALTIME_MODE and latestMatch==lastMatch:
 					print("[%s] No match difference. Pinging again in %i seconds..." % (datetime.now().isoformat(), waitCycle))
 					time.sleep(waitCycle)
 					if waitCycle < 300:
@@ -1027,8 +1028,8 @@ if __name__ == '__main__':
 					time.sleep(20 if DELAY==0 else DELAY)
 					winPredictor(lastMatch, cycleStart)
 					copyfile('output.log', 'complete_output.log')
-					print("Cycle complete. Running again in 60 seconds...")
-					time.sleep(60)
+					print("Cycle complete. Running again in %i seconds..." % 15 if REALTIME_MODE else 60)
+					time.sleep(15 if REALTIME_MODE else 60)
 		else:
 			main()
 	except KeyboardInterrupt:
