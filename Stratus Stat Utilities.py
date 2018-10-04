@@ -422,7 +422,6 @@ def getLatestMatch():
 		exit()
 	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:])
 
-
 def winPredictor(match = "", cycleStart = ""):
 	global MULTITHREADED, DELAY, HEADLESS_MODE
 	
@@ -910,7 +909,7 @@ def winPredictor(match = "", cycleStart = ""):
 					else:
 						output("%s: %s" % (stat.replace('_', ' ').title(), gstats[stat]))
 			
-			output(("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for Current Match \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n") if match.replace(' ', '')=="" else ("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for %s \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n" % match))
+			output(("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for Current Match \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n") if latestMatch else ("\n\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n Team Statistics for %s \n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n" % match))
 			
 			tableHeaders = [x.title() for x in composition]
 			tableHeaders.insert(0, "")
