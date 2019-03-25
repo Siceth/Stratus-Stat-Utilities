@@ -442,8 +442,8 @@ def getStaff() -> list:
 	return sorted(staff, key=str.lower)
 
 def listStaff() -> None:
-	staff: list = getStaff()
 	print("Current listed staff and referees (%s):" % len(staff))
+	staff: list = getStaff()
 	member: str
 	for member in staff:
 		print(" - %s" % member)
@@ -506,9 +506,9 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	logHeadless("Parsing response...");
 	mapName: str = matchPage.find("h2").find("a").get_text().title()
 	mapType: str = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
-	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked
+	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked, micro
 	
-	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed"] or ARGS.headless:
+	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed", "micro"] or ARGS.headless:
 		mapExists: bool = True
 	else:
 		if mapType == "" or mapType == "map.png" or mapType[:7] == "map.png":
@@ -880,7 +880,8 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			elif mapType == "mixed":
 				composition[team]["stats"]["raw_score"] = 0.5 * composition[team]["stats"]["average_kd"] + 0.1 * composition[team]["stats"]["average_monuments_per_hour"] + 0.1 * composition[team]["stats"]["average_wools_per_hour"] + 0.1 * composition[team]["stats"]["average_cores_per_hour"] + 0.2 * composition[team]["stats"]["average_kills_per_game"]
 			else:
-				mapType = "UNKNOWN"
+				if mapType not in ["micro"]:
+					mapType = "UNKNOWN"
 				print("[*] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
 				composition[team]["stats"]["raw_score"] = 1.0 * composition[team]["stats"]["average_khpdg"]
 			
