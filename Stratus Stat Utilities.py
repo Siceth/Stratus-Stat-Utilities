@@ -516,16 +516,19 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 		else:
 			print("The requested match type (\"%s\") is not a supported gamemode!" % mapType)
 		print("Continue anyway? [y/n]")
-		while True:
-			option = input(" > ").lower()
-			if option == 'y' or option == 'yes':
-				mapExists: bool = True
-				break
-			elif option == 'n' or option == 'no':
-				mapExists: bool = False
-				break
-			else:
-				print("Please specify a \"yes\" or \"no\":")
+		if ARGS.headless:
+			mapExists: bool = True
+		else:
+			while True:
+				option = input(" > ").lower()
+				if option == 'y' or option == 'yes':
+					mapExists: bool = True
+					break
+				elif option == 'n' or option == 'no':
+					mapExists: bool = False
+					break
+				else:
+					print("Please specify a \"yes\" or \"no\":")
 	
 	if mapExists:
 		players: list = list()
