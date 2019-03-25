@@ -45,16 +45,16 @@ from io import BytesIO
 from shutil import copyfile
 
 cli = argparse.ArgumentParser()
-cli.add_argument('--multithreaded', "-m", help="bool :: use multithreaded player lookups", type=bool, default=MULTITHREADED)
-cli.add_argument('--clone', "-c", help="str :: set the cURL stat URL/mirror", type=str, default=MIRROR)
-cli.add_argument('--delay', "-d", help="int :: run the win predictor after a number of seconds", type=int, default=DELAY)
-cli.add_argument('--headless', "-n", help="bool :: automatically run the program in non-interactive win predictor mode", type=bool, default=HEADLESS_MODE)
-cli.add_argument('--realtime', "-r", help="bool :: run headless mode consistently", type=bool, default=REALTIME_MODE)
-cli.add_argument('--mysql-host', help="str :: MySQL hostname", type=str, default="localhost")
-cli.add_argument('--mysql-user', help="str :: MySQL username", type=str)
-cli.add_argument('--mysql-pass', help="str :: MySQL password", type=str)
-cli.add_argument('--mysql-db', help="str :: MySQL database", type=str)
-cli.add_argument('--mysql-port', help="int :: MySQL database", type=int, default=3306)
+cli.add_argument('--multithreaded', "-m", help="bool :: use multithreaded player lookups", type = bool, default = MULTITHREADED)
+cli.add_argument('--clone', "-c", help="str :: set the cURL stat URL/mirror", type = str, default = MIRROR)
+cli.add_argument('--delay', "-d", help="int :: run the win predictor after a number of seconds", type = int, default = DELAY)
+cli.add_argument('--headless', "-n", help="bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
+cli.add_argument('--realtime', "-r", help="bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
+cli.add_argument('--mysql-host', help="str :: MySQL hostname", type = str, default="localhost")
+cli.add_argument('--mysql-user', help="str :: MySQL username", type = str)
+cli.add_argument('--mysql-pass', help="str :: MySQL password", type = str)
+cli.add_argument('--mysql-db', help="str :: MySQL database", type = str)
+cli.add_argument('--mysql-port', help="int :: MySQL database", type = int, default = 3306)
 ARGS: dict = cli.parse_args()
 MYSQL: bool = ARGS.mysql_user != None and ARGS.mysql_db != None
 
@@ -346,7 +346,7 @@ def getStatsList(stat: str, stop: int, verbose: bool = True) -> list:
 		if verbose:
 			print("Searching page %s..." % page)
 		rowNum: int = 0
-		statsList: list = curlRequest("stats?game=global&page=" + str(page) + "&sort=" + stat + "&time=eternity", True)
+		statsList: list = curlRequest("stats?game = global&page=" + str(page) + "&sort=" + stat + "&time = eternity", True)
 		if statsList[0] > 399:
 			print("[*] cURL responded with a server error while requesting the stats page (%i). Is the website down?" % statsList[0])
 			exit()
@@ -439,7 +439,7 @@ def getStaff() -> list:
 		member = BS(str(member), "lxml").text
 		if member not in staff:
 			staff.append(member)
-	return sorted(staff, key=str.lower)
+	return sorted(staff, key = str.lower)
 
 def listStaff() -> None:
 	print("Current listed staff and referees (%s):" % len(staff))
@@ -465,7 +465,7 @@ def getLatestMatch() -> str:
 		logHeadless("[*] Error making request!");
 		print("[*] cURL responded with a server error while requesting the main match page (%i). Is the website down?" % matchPage[0])
 		exit()
-	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href=True)) if x.text][0][9:])
+	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href = True)) if x.text][0][9:])
 
 def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	global ARGS, MYSQL, M_CNX, M_CURSOR
@@ -555,7 +555,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 				team: str = (teamDiv.find("h4", {"class": "strong"}).text.lower())[:-((0 if teamCount is None else len(teamCount.text)) + (0 if teamTag is None else len(teamTag.text)))]
 				composition[team] = {"players": dict(), "stats": dict()}
 				player: str
-				for player in [x["href"][1:] for x in teamDiv.findAll("a", href=True)]:
+				for player in [x["href"][1:] for x in teamDiv.findAll("a", href = True)]:
 					composition[team]["players"][player] = dict()
 		
 		tPreFetch: int = time.time()
@@ -565,7 +565,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 		if ARGS.multithreaded:
 			if not ARGS.headless:
 				print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
-			with ThreadPoolExecutor(max_workers=4) as executor:
+			with ThreadPoolExecutor(max_workers = 4) as executor:
 				team: str
 				for team in composition:
 					print("\nGetting stats for players on %s (%d)..." % (team, len(composition[team]["players"])))
