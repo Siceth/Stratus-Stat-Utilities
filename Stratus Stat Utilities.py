@@ -12,6 +12,7 @@ MIRROR = "https://stats.seth-phillips.com/stratus/"
 DELAY = 15
 HEADLESS_MODE = False
 REALTIME_MODE = False
+UNIXBOT = False
 
 import os
 import platform
@@ -130,7 +131,7 @@ def lazy_input(L):
 def loadMessage():
 	return random.choice(["Searching the cloud", "Getting Stratus status", "Completing the water cycle", "Querying for snakes and goobers", "Watching the clouds"]) + "...\n"
 
-def curlRequest(url, forceNoMirror = False):
+def curlRequest(url, forceNoMirror = False, handleError = True):
 	global ARGS, UNIX
 	try:
 		buffer = BytesIO()
@@ -148,8 +149,10 @@ def curlRequest(url, forceNoMirror = False):
 		c.close()
 		if response < 500:
 			return [response, html.replace('\n', '')]
-		print("[*] cURL responded with a server error while performing the request (%i). Is the website down?" % response)
-		exit()
+		if handleError:
+			print("[*] cURL responded with a server error while performing the request (%s; %i). Is the website down?" % (url, response))
+			exit()
+		return [response, ""]
 	except:
 		print("[*] cURL performance failed. Is your internet operational?")
 		exit()
@@ -437,10 +440,10 @@ def listStaff():
 		print(" - %s" % member)
 
 def getCurrentPlayers():
-	teamsPage = curlRequest("https://stratusapi.unixfox.eu/teams")
+	teamsPage = curlRequest("https://stratusapi.unixfox.eu/teams", False, False)
 	if teamsPage[0] > 399:
 		logHeadless("[*] Error making request!");
-		print("[*] cURL responded with a server error while requesting the main match page (%i). Is unixfox's Stratus API down?" % teamsPage[0])
+		print("[*] cURL responded with a server error while requesting the player list (%i). Is unixfox's Stratus API down?" % teamsPage[0])
 		exit()
 	teams = json.loads(teamsPage[1])
 	if "Observers" in teams:
@@ -520,7 +523,7 @@ def winPredictor(match = "", cycleStart = ""):
 		gstats = dict()
 		composition = dict()
 		
-		if latestMatch or ARGS.headless:
+		if UNIXBOT and (latestMatch or ARGS.headless):
 			logHeadless("Getting the live team structure...");
 			currentPlayers = getCurrentPlayers()
 			for team in currentPlayers:
