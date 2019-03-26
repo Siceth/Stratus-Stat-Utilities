@@ -12,7 +12,7 @@ MIRROR: str = "https://stats.seth-phillips.com/stratus/"
 DELAY: int = 15
 HEADLESS_MODE: bool = False
 REALTIME_MODE: bool = False
-UNIXBOT: bool = False
+UNIXBOT: bool = True
 
 import os
 import platform

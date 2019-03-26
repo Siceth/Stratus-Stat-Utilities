@@ -20,7 +20,7 @@ This was a fun little project that I wanted to do for a while.  It scrapes data 
 
 ## Requirements
 
-* Python 3.1 to 3.6
+* Python 3.6 or higher
 * lxml 4.x
 * PycURL
 * libcurl 7.19.x (should come with PycURL)
