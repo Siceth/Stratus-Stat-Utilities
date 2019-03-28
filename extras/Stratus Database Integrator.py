@@ -97,10 +97,18 @@ if VERBOSE_OUTPUT:
 	print("Finding players in specified directory...")
 players = list(player for player in os.listdir(config["Integrator"]["path"]) if os.path.isfile(os.path.join(config["Integrator"]["path"], player)))
 players.sort()
-stats = {}
 
 if VERBOSE_OUTPUT:
-	print("Querying and indexing database cache...")
+	print("Finding matches in specified directory...")
+matches = list(match for match in os.listdir(config["Integrator"]["path"] + "/matches") if os.path.isfile(os.path.join(config["Integrator"]["path"], player)))
+
+if VERBOSE_OUTPUT:
+	print("Found %d players and %d matches." % (len(players), len(matches))
+pstats = {}
+mstats = {}
+
+if VERBOSE_OUTPUT:
+	print("Querying and indexing database player cache...")
 qrPlayers = runQuery("SELECT username,cached FROM `players`").fetch_row(maxrows=0, how=1)
 playerCache = {}
 for v in qrPlayers:
@@ -129,168 +137,168 @@ for player in players:
 			deleteFile(config["Integrator"]["path"] + "/" + player)
 		continue
 	
-	stats[player] = {}
-	stats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]
+	pstats[player] = {}
+	pstats[player]["cached"] = playerPage.find_all(string=lambda text:isinstance(text,Comment))[0][8:27]
 	
-	if player not in playerCache or playerCache[str(player).lower()]!=stats[player]["cached"]:
+	if player not in playerCache or playerCache[str(player).lower()] != pstats[player]["cached"]:
 		try:
-			# Raw Stats
-			stats[player]["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
+			# Raw pstats
+			pstats[player]["uuid"] = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
 			
 			data = playerPage.findAll("div", {"class": "number"})
 			if len(data) >= 7:
-				stats[player]["kills"] = int(data[0].get_text())
-				stats[player]["deaths"] = int(data[1].get_text())
-				stats[player]["friends"] = int(data[2].get_text())
-				stats[player]["kill_rank"] = int((data[3].get_text())[:-2])
-				stats[player]["droplets"] = int(float('.'.join(re.findall('\d+', data[6].get_text()))) * (1000 if (data[6].get_text())[-1:]=='k' else (1000000 if (data[6].get_text())[-1:]=='m' else (1000000000 if (data[6].get_text())[-1:]=='b' else 1))))
+				pstats[player]["kills"] = int(data[0].get_text())
+				pstats[player]["deaths"] = int(data[1].get_text())
+				pstats[player]["friends"] = int(data[2].get_text())
+				pstats[player]["kill_rank"] = int((data[3].get_text())[:-2])
+				pstats[player]["droplets"] = int(float('.'.join(re.findall('\d+', data[6].get_text()))) * (1000 if (data[6].get_text())[-1:] == 'k' else (1000000 if (data[6].get_text())[-1:] == 'm' else (1000000000 if (data[6].get_text())[-1:] == 'b' else 1))))
 			else:
-				stats[player]["kills"] = 0
-				stats[player]["deaths"] = 0
-				stats[player]["friends"] = 0
-				stats[player]["kill_rank"] = 0
-				stats[player]["droplets"] = 0
+				pstats[player]["kills"] = 0
+				pstats[player]["deaths"] = 0
+				pstats[player]["friends"] = 0
+				pstats[player]["kill_rank"] = 0
+				pstats[player]["droplets"] = 0
 			
 			data = playerPage.findAll("h2")
 			if len(data) > 0:
-				stats[player]["username"] = BS(str(data[0]), "lxml").findAll("span")[0].get_text().replace('\n', '').replace(' ', '')
+				pstats[player]["username"] = BS(str(data[0]), "lxml").findAll("span")[0].get_text().replace('\n', '').replace(' ', '')
 			if len(data) > 3:
 				for matches in data:
 					subs = BS(str(matches), "lxml").findAll("small", {"class": "strong"})
 					if len(subs) > 0:
 						for sub in subs:
-							if sub.text.lower()=="cores leaked":
-								stats[player]["cores"] = int(re.sub("\D", "", matches.get_text()))
+							if sub.text.lower() == "cores leaked":
+								pstats[player]["cores"] = int(re.sub("\D", "", matches.get_text()))
 								break
-							elif sub.text.lower()=="monuments destroyed":
-								stats[player]["monuments"] = int(re.sub("\D", "", matches.get_text()))
+							elif sub.text.lower() == "monuments destroyed":
+								pstats[player]["monuments"] = int(re.sub("\D", "", matches.get_text()))
 								break
-							elif sub.text.lower()=="wools placed":
-								stats[player]["wools"] = int(re.sub("\D", "", matches.get_text()))
+							elif sub.text.lower() == "wools placed":
+								pstats[player]["wools"] = int(re.sub("\D", "", matches.get_text()))
 								break
-							elif sub.text.lower()=="flags captured":
-								stats[player]["flags"] = int(re.sub("\D", "", matches.get_text()))
+							elif sub.text.lower() == "flags captured":
+								pstats[player]["flags"] = int(re.sub("\D", "", matches.get_text()))
 								break
-			if "username" not in stats[player]:
-				stats[player]["username"] = player
-			if "monuments" not in stats[player]:
-				stats[player]["monuments"] = 0
-			if "wools" not in stats[player]:
-				stats[player]["wools"] = 0
-			if "flags" not in stats[player]:
-				stats[player]["flags"] = 0
-			if "cores" not in stats[player]:
-				stats[player]["cores"] = 0
+			if "username" not in pstats[player]:
+				pstats[player]["username"] = player
+			if "monuments" not in pstats[player]:
+				pstats[player]["monuments"] = 0
+			if "wools" not in pstats[player]:
+				pstats[player]["wools"] = 0
+			if "flags" not in pstats[player]:
+				pstats[player]["flags"] = 0
+			if "cores" not in pstats[player]:
+				pstats[player]["cores"] = 0
 			
 			data = playerPage.findAll("section")
 			if len(data) > 0:
 				ranks = BS(str(data[0]), "lxml").findAll("a", {"class": "label"}) + BS(str(data[0]), "lxml").findAll("span", {"class": "label"})
-				stats[player]["ranks"] = len(ranks)
+				pstats[player]["ranks"] = len(ranks)
 				playerTags = (BS(str(ranks), "lxml").text).lower()
-				stats[player]["staff"] = True if any(x in playerTags for x in staffRanks) else False
-				stats[player]["donor"] = True if any(x in playerTags for x in donorRanks) else False
+				pstats[player]["staff"] = True if any(x in playerTags for x in staffRanks) else False
+				pstats[player]["donor"] = True if any(x in playerTags for x in donorRanks) else False
 			else:
-				stats[player]["ranks"] = 0
-				stats[player]["staff"] = False
-				stats[player]["donor"] = False
+				pstats[player]["ranks"] = 0
+				pstats[player]["staff"] = False
+				pstats[player]["donor"] = False
 			
-			stats[player]["tournament_winner"] = True if [x for x in data if "tournament winner" in (x.text).lower()] else False
+			pstats[player]["tournament_winner"] = True if [x for x in data if "tournament winner" in (x.text).lower()] else False
 			
 			data = playerPage.findAll("h4", {"class": "strong"})
 			if len(data) >= 3:
-				stats[player]["first_joined"] = dateparser.parse(data[0]['title'][16:]).strftime('%Y-%m-%d')
-				stats[player]["hours_played"] = int(re.sub("\D", "", data[1].get_text()))
-				stats[player]["teams_joined"] = int(re.sub("\D", "", data[2].get_text()))
+				pstats[player]["first_joined"] = dateparser.parse(data[0]['title'][16:]).strftime('%Y-%m-%d')
+				pstats[player]["hours_played"] = int(re.sub("\D", "", data[1].get_text()))
+				pstats[player]["teams_joined"] = int(re.sub("\D", "", data[2].get_text()))
 			else:
-				stats[player]["first_joined"] = dateparser.parse(datetime.date.today()).strftime('%Y-%m-%d')
-				stats[player]["hours_played"] = 0
-				stats[player]["teams_joined"] = 0
+				pstats[player]["first_joined"] = dateparser.parse(datetime.date.today()).strftime('%Y-%m-%d')
+				pstats[player]["hours_played"] = 0
+				pstats[player]["teams_joined"] = 0
 			
 			data = playerPage.findAll("div", {"class": "thumbnail trophy"})
-			stats[player]["trophies"] = int(len(data))
+			pstats[player]["trophies"] = int(len(data))
 			
 			data = playerPage.findAll("h5", {"class": "strong"})
-			stats[player]["has_team"] = True if [x for x in data if "team" in (x.text).lower()] else False
+			pstats[player]["has_team"] = True if [x for x in data if "team" in (x.text).lower()] else False
 			
-			# Calculated Stats
-			stats[player]["kd"] = stats[player]["kills"] / (1 if stats[player]["deaths"]==0 else stats[player]["deaths"])
+			# Calculated pstats
+			pstats[player]["kd"] = pstats[player]["kills"] / (1 if pstats[player]["deaths"] == 0 else pstats[player]["deaths"])
 			
-			stats[player]["average_kills_per_hour"] = stats[player]["kills"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_deaths_per_hour"] = stats[player]["deaths"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_monuments_per_hour"] = stats[player]["monuments"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_wools_per_hour"] = stats[player]["wools"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_cores_per_hour"] = stats[player]["cores"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_flags_per_hour"] = stats[player]["flags"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_droplets_per_hour"] = stats[player]["droplets"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_new_friends_per_hour"] = stats[player]["friends"] / (1 if stats[player]["hours_played"]==0 else stats[player]["hours_played"])
-			stats[player]["average_experienced_game_length_in_minutes"] = stats[player]["hours_played"] * 60 / (1 if stats[player]["teams_joined"]==0 else stats[player]["teams_joined"])
-			stats[player]["average_kills_per_game"] = stats[player]["kills"] / (1 if stats[player]["teams_joined"]==0 else stats[player]["teams_joined"])
+			pstats[player]["average_kills_per_hour"] = pstats[player]["kills"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_deaths_per_hour"] = pstats[player]["deaths"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_monuments_per_hour"] = pstats[player]["monuments"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_wools_per_hour"] = pstats[player]["wools"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_cores_per_hour"] = pstats[player]["cores"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_flags_per_hour"] = pstats[player]["flags"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_droplets_per_hour"] = pstats[player]["droplets"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_new_friends_per_hour"] = pstats[player]["friends"] / (1 if pstats[player]["hours_played"] == 0 else pstats[player]["hours_played"])
+			pstats[player]["average_experienced_game_length_in_minutes"] = pstats[player]["hours_played"] * 60 / (1 if pstats[player]["teams_joined"] == 0 else pstats[player]["teams_joined"])
+			pstats[player]["average_kills_per_game"] = pstats[player]["kills"] / (1 if pstats[player]["teams_joined"] == 0 else pstats[player]["teams_joined"])
 			
-			stats[player]["khpdg"] = stats[player]["kd"] / (60.0 / (1 if stats[player]["average_experienced_game_length_in_minutes"]==0 else stats[player]["average_experienced_game_length_in_minutes"]))
+			pstats[player]["khpdg"] = pstats[player]["kd"] / (60.0 / (1 if pstats[player]["average_experienced_game_length_in_minutes"] == 0 else pstats[player]["average_experienced_game_length_in_minutes"]))
 			
-			joined = (datetime.date.today() - datetime.datetime.strptime(stats[player]["first_joined"], "%Y-%m-%d").date()).days
-			stats[player]["percent_time_spent_on_stratus"] = 0 if joined < 7 else (stats[player]["hours_played"] * 100 / (24 if joined==0 else (joined * 24)))
-			stats[player]["percent_waking_time_spent_on_stratus"] = 0 if joined < 7 else (stats[player]["hours_played"] * 100 / (16 if joined==0 else (joined * 16)))
+			joined = (datetime.date.today() - datetime.datetime.strptime(pstats[player]["first_joined"], "%Y-%m-%d").date()).days
+			pstats[player]["percent_time_spent_on_stratus"] = 0 if joined < 7 else (pstats[player]["hours_played"] * 100 / (24 if joined == 0 else (joined * 24)))
+			pstats[player]["percent_waking_time_spent_on_stratus"] = 0 if joined < 7 else (pstats[player]["hours_played"] * 100 / (16 if joined == 0 else (joined * 16)))
 			
-			# Unfortunately these stats have to retire since droplets can be spent, which can result in negative objective percentages.
-			#stats[player]["percent_droplets_are_kills"] = stats[player]["kills"] * 100 / (1 if stats[player]["droplets"]==0 else stats[player]["droplets"])
-			#stats[player]["percent_droplets_are_objectives"] = 100 - stats[player]["percent_droplets_are_kills"]
+			# Unfortunately these pstats have to retire since droplets can be spent, which can result in negative objective percentages.
+			#pstats[player]["percent_droplets_are_kills"] = pstats[player]["kills"] * 100 / (1 if pstats[player]["droplets"] == 0 else pstats[player]["droplets"])
+			#pstats[player]["percent_droplets_are_objectives"] = 100 - pstats[player]["percent_droplets_are_kills"]
 			
 			# Merit is based on hours played on a scale to account for veteran players that idle. Using inverse regression
-			# analysis, the above formula was found so that the stats of a user that has only played for less than an hour
+			# analysis, the above formula was found so that the pstats of a user that has only played for less than an hour
 			# is only worth 10% of what's reported; 100 hours constitutes 100% accuracy and 1000+ hours grants 120%.
-			stats[player]["kill_based_merit"] = (1.2 - (500 / stats[player]["kills"])) if stats[player]["kills"] > 454 else 0.1
-			stats[player]["time_based_merit"] = (1.2 - (5 / stats[player]["hours_played"])) if stats[player]["hours_played"] > 4 else 0.1
-			stats[player]["merit_multiplier"] = (stats[player]["kill_based_merit"] + stats[player]["time_based_merit"]) / 2
+			pstats[player]["kill_based_merit"] = (1.2 - (500 / pstats[player]["kills"])) if pstats[player]["kills"] > 454 else 0.1
+			pstats[player]["time_based_merit"] = (1.2 - (5 / pstats[player]["hours_played"])) if pstats[player]["hours_played"] > 4 else 0.1
+			pstats[player]["merit_multiplier"] = (pstats[player]["kill_based_merit"] + pstats[player]["time_based_merit"]) / 2
 			
 			# Reliability is solely based on teams joined and is used similar to merit to evaluate how well this player's
-			# stats can be extrapolated to fit larger data sums
-			stats[player]["reliability_index"] = (1.0 - (50 / stats[player]["teams_joined"])) if stats[player]["teams_joined"] > 50 else 0.01
+			# pstats can be extrapolated to fit larger data sums
+			pstats[player]["reliability_index"] = (1.0 - (50 / pstats[player]["teams_joined"])) if pstats[player]["teams_joined"] > 50 else 0.01
 			
-			stats[player]["hours_until_one_million_droplets"] = 0 if stats[player]["droplets"] > 1000000 else ((1000000 - stats[player]["droplets"]) / (1 if stats[player]["average_droplets_per_hour"]==0 else stats[player]["average_droplets_per_hour"]))
+			pstats[player]["hours_until_one_million_droplets"] = 0 if pstats[player]["droplets"] > 1000000 else ((1000000 - pstats[player]["droplets"]) / (1 if pstats[player]["average_droplets_per_hour"]==0 else pstats[player]["average_droplets_per_hour"]))
 		
 			# Database cleanup -- configure based on database float allocation values
-			if stats[player]["kd"] >= 10000:
-				stats[player]["kd"] = 9999.999
-			if stats[player]["average_kills_per_hour"] >= 10000:
-				stats[player]["average_kills_per_hour"] = 9999.999
-			if stats[player]["average_deaths_per_hour"] >= 10000:
-				stats[player]["average_deaths_per_hour"] = 9999.999
-			if stats[player]["average_monuments_per_hour"] >= 10000:
-				stats[player]["average_monuments_per_hour"] = 9999.999
-			if stats[player]["average_wools_per_hour"] >= 10000:
-				stats[player]["average_wools_per_hour"] = 9999.999
-			if stats[player]["average_cores_per_hour"] >= 10000:
-				stats[player]["average_cores_per_hour"] = 9999.999
-			if stats[player]["average_flags_per_hour"] >= 10000:
-				stats[player]["average_flags_per_hour"] = 9999.999
-			if stats[player]["average_droplets_per_hour"] >= 10000000:
-				stats[player]["average_droplets_per_hour"] = 9999999.999
-			if stats[player]["average_new_friends_per_hour"] >= 10000:
-				stats[player]["average_new_friends_per_hour"] = 9999.999
-			if stats[player]["average_experienced_game_length_in_minutes"] >= 1000:
-				stats[player]["average_experienced_game_length_in_minutes"] = 999.999
-			if stats[player]["average_kills_per_game"] >= 100:
-				stats[player]["average_kills_per_game"] = 99.999
-			if stats[player]["average_kills_per_game"] >= 10:
-				stats[player]["average_kills_per_game"] = 9.999999
-			if stats[player]["percent_time_spent_on_stratus"] >= 1000:
-				stats[player]["percent_time_spent_on_stratus"] = 999.99
-			if stats[player]["percent_waking_time_spent_on_stratus"] >= 1000:
-				stats[player]["percent_waking_time_spent_on_stratus"] = 999.99
+			if pstats[player]["kd"] >= 10000:
+				pstats[player]["kd"] = 9999.999
+			if pstats[player]["average_kills_per_hour"] >= 10000:
+				pstats[player]["average_kills_per_hour"] = 9999.999
+			if pstats[player]["average_deaths_per_hour"] >= 10000:
+				pstats[player]["average_deaths_per_hour"] = 9999.999
+			if pstats[player]["average_monuments_per_hour"] >= 10000:
+				pstats[player]["average_monuments_per_hour"] = 9999.999
+			if pstats[player]["average_wools_per_hour"] >= 10000:
+				pstats[player]["average_wools_per_hour"] = 9999.999
+			if pstats[player]["average_cores_per_hour"] >= 10000:
+				pstats[player]["average_cores_per_hour"] = 9999.999
+			if pstats[player]["average_flags_per_hour"] >= 10000:
+				pstats[player]["average_flags_per_hour"] = 9999.999
+			if pstats[player]["average_droplets_per_hour"] >= 10000000:
+				pstats[player]["average_droplets_per_hour"] = 9999999.999
+			if pstats[player]["average_new_friends_per_hour"] >= 10000:
+				pstats[player]["average_new_friends_per_hour"] = 9999.999
+			if pstats[player]["average_experienced_game_length_in_minutes"] >= 1000:
+				pstats[player]["average_experienced_game_length_in_minutes"] = 999.999
+			if pstats[player]["average_kills_per_game"] >= 100:
+				pstats[player]["average_kills_per_game"] = 99.999
+			if pstats[player]["average_kills_per_game"] >= 10:
+				pstats[player]["average_kills_per_game"] = 9.999999
+			if pstats[player]["percent_time_spent_on_stratus"] >= 1000:
+				pstats[player]["percent_time_spent_on_stratus"] = 999.99
+			if pstats[player]["percent_waking_time_spent_on_stratus"] >= 1000:
+				pstats[player]["percent_waking_time_spent_on_stratus"] = 999.99
 		except Exception as e:
 			print("[*] Error translating web cache info! Did the website's page layout change?\nError:" + str(e))
 			continue
 		
 		if VERBOSE_OUTPUT:
 			print("Adding to database...")
-		runQuery("INSERT INTO players (" + (", ".join(_mysql.escape_string(x).decode("utf-8") for x in stats[player].keys())) + ") VALUES(" + (", ".join(("\"" + _mysql.escape_string(str(x)).decode("utf-8") + "\"" if isinstance(x, str) else _mysql.escape_string(str(x)).decode("utf-8")) for x in stats[player].values())) + ") ON DUPLICATE KEY UPDATE " + (", ".join(["{}={}{}{}".format(_mysql.escape_string(k).decode("utf-8"),("\"" if isinstance(v, str) else ""),_mysql.escape_string(str(v)).decode("utf-8"),("\"" if isinstance(v, str) else "")) for k,v in stats[player].items()])))
+		runQuery("INSERT INTO players (" + (", ".join(_mysql.escape_string(x).decode("utf-8") for x in pstats[player].keys())) + ") VALUES(" + (", ".join(("\"" + _mysql.escape_string(str(x)).decode("utf-8") + "\"" if isinstance(x, str) else _mysql.escape_string(str(x)).decode("utf-8")) for x in pstats[player].values())) + ") ON DUPLICATE KEY UPDATE " + (", ".join(["{}={}{}{}".format(_mysql.escape_string(k).decode("utf-8"),("\"" if isinstance(v, str) else ""),_mysql.escape_string(str(v)).decode("utf-8"),("\"" if isinstance(v, str) else "")) for k,v in pstats[player].items()])))
 		
 		if VERBOSE_OUTPUT:
 			print("Done.")
 	else:
 		if VERBOSE_OUTPUT:
-			print("No updates. C:%s F:%s" % (playerCache[str(player).lower()], stats[player]["cached"]))
+			print("No updates. C:%s F:%s" % (playerCache[str(player).lower()], pstats[player]["cached"]))
 
 if VERBOSE_OUTPUT:
 	print("Disconnecting from database; processing finished.")

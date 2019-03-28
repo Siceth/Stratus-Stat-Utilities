@@ -49,7 +49,7 @@ import re
 import time
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from shutil import copyfile
 
@@ -109,6 +109,11 @@ try:
 except ImportError:
 	missingPackage("beautifulsoup4")
 
+try:
+	import dateutil.parser
+except ImportError:
+	missingPackage("python-dateutil")
+
 def logHeadless(data: str, newLine: bool = True, mode: str = 'a') -> None:
 	global ARGS
 	if ARGS.headless:
@@ -131,6 +136,9 @@ def lazy_input(L: list) -> None:
 	global UNIX
 	os.system("read _ > /dev/null" if UNIX else "pause > nul")
 	L.append(None)
+
+# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked, micro	
+MAP_TYPES = ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "arcade", "ffa", "mixed", "payload", "micro"]
 
 def loadMessage() -> str:
 	return random.choice(["Searching the cloud", "Getting Stratus status", "Completing the water cycle", "Querying for snakes and goobers", "Watching the clouds"]) + "...\n"
@@ -319,6 +327,65 @@ def getPlayerStats(player: str, doCalculations: bool = True, forceRenew: bool = 
 			exit()
 	return stats
 
+def getMatchStats(uid: str, forceRenew: bool = True) -> dict:
+	global MAP_TYPES
+	
+	stats: dict = dict()
+	matchPage: list = curlRequest("matches/" + uid + ("?force-renew" if forceRenew else ""))
+	
+	if matchPage[0] > 399:
+		stats["exists"] = False
+	else:
+		stats["exists"] = True
+		matchPage: BeautifulSoup = BS(matchPage[1], "lxml")
+		
+		try:
+			stats["uid"] = uid
+			
+			data: BeautifulSoup = matchPage.find("h2")
+			stats["map"] = data.find("a").get_text()
+			
+			stats["type"] = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
+			stats["type"] = stats["type"] if stats["type"].lower() in MAP_TYPES else None
+			
+			data: BeautifulSoup = data.find("small")
+			if "title" in data:
+				stats["start_timestamp"] = dateutil.parser.parse(data['title'])
+			else:
+				stats["start_timestamp"] = None
+			
+			data: BeautifulSoup = matchPage.findAll("h3", {"class": "strong"})
+			if stats["start_timestamp"] == None:
+				stats["duration"] = 0
+				stats["end_timestamp"] = None
+			else:
+				durationParts: list = re.findall(r'\d+', str(data[1].text))
+				numDurationParts: int = len(durationParts)
+				durationMultipliers: list = [1, 60, 60, 24]
+				stats["duration"] = 0
+				if len(durationMultipliers) < numDurationParts:
+					print("[*] Error translating web info! Did this match last more than serveral days?")
+					exit()
+				stats["duration"] = sum([(int(t) * durationMultipliers[numDurationParts - i]) for i, t in enumerate(durationParts, start = 1)])
+				
+				stats["end_timestamp"] = stats["start_timestamp"] + timedelta(seconds = stats["duration"])
+			
+			stats["kills"] = re.findall(r'\d+', str(data[2].text))[0]
+			stats["deaths"] = re.findall(r'\d+', str(data[3].text))[0]
+			
+			data: BeautifulSoup = matchPage.findAll("h4", {"class": "strong"})
+			stats["players"] = sum([int(x.find("small").text) for x in data])
+			
+			stats["prev_uuid"] = None
+			stats["next_uuid"] = None
+			
+		except KeyboardInterrupt:
+			raise
+		except Exception as e:
+			print("[*] Error translating web info! Did the website's page layout change?\n" + e) # TODO remove
+			exit()
+	return stats
+
 def playerStatsLookup() -> None:
 	print("Enter player to lookup:")
 	username: str = ""
@@ -337,7 +404,27 @@ def playerStatsLookup() -> None:
 			if stat != "exists":
 				print("%s: %s" % (stat.replace('_', ' ').title(), stats[stat]))
 	else:
-		print("[*] The username specified does not exist!")
+		print("[*] The specified username does not exist!")
+
+def matchStatsLookup() -> None:
+	print("Enter match UID to lookup:")
+	uid: str = ""
+	
+	while True:
+		uid: str = input(" > ").replace(' ', '')
+		if re.match("^[A-Za-z0-9-]{36}$", uid):
+			break
+		else:
+			print("Input must be a valid UID (36 characters with dashes). Try again:")
+	
+	print(loadMessage())
+	stats: dict = getMatchStats(uid)
+	if stats["exists"]:
+		for stat in stats:
+			if stat != "exists":
+				print("%s: %s" % (stat.replace('_', ' ').title(), stats[stat]))
+	else:
+		print("[*] The specified UID does not exist!")
 
 def getStatsList(stat: str, stop: int, verbose: bool = True) -> list:
 	players: list = list()
@@ -472,7 +559,7 @@ def getLatestMatch() -> str:
 	return ([x["href"] for x in (BS(str((BS(matchPage[1], "lxml").findAll("tr"))[1]), "lxml").findAll("a", href = True)) if x.text][0][9:])
 
 def winPredictor(match: str = "", cycleStart: str = "") -> None:
-	global ARGS, MYSQL, M_CNX, M_CURSOR
+	global ARGS, MYSQL, M_CNX, M_CURSOR, MAP_TYPES
 	
 	if not ARGS.headless:
 		if ARGS.delay == 0:
@@ -510,9 +597,8 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	logHeadless("Parsing response...");
 	mapName: str = matchPage.find("h2").find("a").get_text().title()
 	mapType: str = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
-	# tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked, micro
 	
-	if mapType in ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "ffa", "mixed", "micro"] or ARGS.headless:
+	if mapType in MAP_TYPES or ARGS.headless:
 		mapExists: bool = True
 	else:
 		if mapType == "" or mapType == "map.png" or mapType[:7] == "map.png":
@@ -877,7 +963,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 				composition[team]["stats"]["raw_score"] = 0.5 * composition[team]["stats"]["average_kd"] + 0.3 * composition[team]["stats"]["average_monuments_per_hour"] + 0.2 * composition[team]["stats"]["average_cores_per_hour"]
 			elif mapType == "koth":
 				composition[team]["stats"]["raw_score"] = composition[team]["stats"]["average_kd"]
-			elif mapType == "blitz":
+			elif mapType == "blitz" or mapType == "payload" or mapType == "micro":
 				composition[team]["stats"]["raw_score"] = composition[team]["stats"]["average_khpdg"]
 			elif mapType == "rage":
 				composition[team]["stats"]["raw_score"] = 0 if composition[team]["stats"]["average_khpdg"] == 0 or composition[team]["stats"]["average_experienced_game_length_in_minutes"] == 0 else (1 / (composition[team]["stats"]["average_khpdg"] * composition[team]["stats"]["average_experienced_game_length_in_minutes"]))
@@ -887,10 +973,9 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			elif mapType == "mixed":
 				composition[team]["stats"]["raw_score"] = 0.5 * composition[team]["stats"]["average_kd"] + 0.1 * composition[team]["stats"]["average_monuments_per_hour"] + 0.1 * composition[team]["stats"]["average_wools_per_hour"] + 0.1 * composition[team]["stats"]["average_cores_per_hour"] + 0.2 * composition[team]["stats"]["average_kills_per_game"]
 			else:
-				if mapType not in ["micro"]:
-					mapType = "UNKNOWN"
+				mapType = "UNKNOWN"
 				print("[*] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
-				composition[team]["stats"]["raw_score"] = 1.0 * composition[team]["stats"]["average_khpdg"]
+				composition[team]["stats"]["raw_score"] = composition[team]["stats"]["average_khpdg"]
 			
 			composition[team]["stats"]["raw_score"] += 0.02 * composition[team]["stats"]["total_donors"] + 0.03 * composition[team]["stats"]["total_tournament_winners"]
 			composition[team]["stats"]["adjusted_score"] = composition[team]["stats"]["raw_score"] * composition[team]["stats"]["average_merit"]
@@ -901,9 +986,6 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			gstats["average_username_length"] += composition[team]["stats"]["average_username_length"]
 		
 		numTeams: int = len(composition)
-		
-		# Can't remember why I have this in here but I'll uncomment it if it somehow breaks something
-		#almostASCII: list = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 		
 		gstats["total_players"]: int = len(players)
 		gstats["username_amalgamation"]: str = ""
@@ -1046,7 +1128,7 @@ def main() -> None:
 		print(" %s v%s" % (TITLE_TEXT, VERSION))
 		print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
 		
-		options: list = ["Get a player's stats", "Reverse stats lookup", "List staff members", "Win predictor", "Exit"]
+		options: list = ["Get a player's stats", "Reverse player stats lookup", "Get a public match's stats", "List staff members", "Win predictor", "Exit"]
 		print("Pick a utility:")
 		stat: str
 		for stat in options:
@@ -1066,8 +1148,10 @@ def main() -> None:
 		elif option_num == 2:
 			reverseStatsLookup()
 		elif option_num == 3:
-			listStaff()
+			matchStatsLookup()
 		elif option_num == 4:
+			listStaff()
+		elif option_num == 5:
 			winPredictor()
 		else:
 			EXIT = True

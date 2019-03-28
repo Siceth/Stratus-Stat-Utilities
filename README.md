@@ -14,21 +14,20 @@ This was a fun little project that I wanted to do for a while.  It scrapes data 
 
 * Custom group statistics
 * 1v1 comparison
-* Local caching
 * Nginx/Ruby mirror files
-* More planned features
 
 ## Requirements
 
-* Python 3.6 or higher
+* Python 3.6+
 * lxml 4.x
 * PycURL
 * libcurl 7.19.x (should come with PycURL)
 * python-tabulate
 * BeautifulSoup 4.4.x
 * Packaging
+* python-dateutil 2.0+
 
-You should be able to do the trick with `pip install lxml pycurl tabulate beautifulsoup4 packaging`
+You should be able to do the trick with `pip install lxml pycurl tabulate beautifulsoup4 packaging python-dateutil`
 
 ## Configuration
 
