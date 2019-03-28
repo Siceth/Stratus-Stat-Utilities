@@ -25,6 +25,7 @@ else:
 	print("[*] OS not supported!")
 	exit()
 
+from packaging import version
 if version.parse(platform.python_version()) < version.parse("3.6"):
 	print("[*] You must run this on Python 3.6!")
 	exit()
@@ -41,7 +42,6 @@ import time
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from packaging import version
 from io import BytesIO
 from shutil import copyfile
 
