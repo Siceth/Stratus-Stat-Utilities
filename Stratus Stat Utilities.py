@@ -533,8 +533,8 @@ def getStaff() -> list:
 	return sorted(staff, key = str.lower)
 
 def listStaff() -> None:
-	print("Current listed staff and referees (%s):" % len(staff))
 	staff: list = getStaff()
+	print("Current listed staff and referees (%s):" % len(staff))
 	member: str
 	for member in staff:
 		print(" - %s" % member)
