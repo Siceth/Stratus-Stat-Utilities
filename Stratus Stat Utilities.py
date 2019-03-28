@@ -14,6 +14,10 @@ HEADLESS_MODE: bool = False
 REALTIME_MODE: bool = False
 UNIXBOT: bool = True
 
+def missingPackage(package: str) -> None:
+	print("Your system is missing %(0)s. Please run `easy_install %(0)s` or `pip install %(0)s` before executing." % { '0': package })
+	exit()
+
 import os
 import platform
 import sys
@@ -25,7 +29,11 @@ else:
 	print("[*] OS not supported!")
 	exit()
 
-from packaging import version
+try:
+	from packaging import version
+except ImportError:
+	missingPackage("packaging")
+
 if version.parse(platform.python_version()) < version.parse("3.6"):
 	print("[*] You must run this on Python 3.6!")
 	exit()
@@ -63,15 +71,13 @@ try:
 	from lxml import etree
 	import lxml.html as lh
 except ImportError:
-	print("Your system is missing lxml. Please run `easy_install lxml` or `pip install lxml` before executing.")
-	exit()
+	missingPackage("lxml")
 
 if MYSQL:
 	try:
 		import mysql.connector
 	except ImportError:
-		print("Your system is missing mysql-connector. Please run `easy_install mysql-connector` or `pip install mysql-connector` before executing.")
-		exit()
+		missingPackage("mysql-connector")
 	try:
 		M_CNX = mysql.connector.connect(
 			host = ARGS.mysql_host,
@@ -91,20 +97,17 @@ if MYSQL:
 try:
 	import pycurl
 except ImportError:
-	print("Your system is missing pycurl. Please run `easy_install pycurl` or `pip install pycurl` before executing.")
-	exit()
+	missingPackage("pycurl")
 
 try:
 	from tabulate import tabulate
 except ImportError:
-	print("Your system is missing tabulate. Please run `easy_install tabulate` or `pip install tabulate` before executing.")
-	exit()
+	missingPackage("tabulate")
 
 try:
 	from bs4 import BeautifulSoup as BS
 except ImportError:
-	print("Your system is missing BeautifulSoup. Please run `easy_install beautifulsoup4` or `pip install beautifulsoup4` before executing.")
-	exit()
+	missingPackage("beautifulsoup4")
 
 def logHeadless(data: str, newLine: bool = True, mode: str = 'a') -> None:
 	global ARGS
