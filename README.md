@@ -54,8 +54,8 @@ What little is available to configure should be pretty self-explanitory.
     * Pulls from https://stratus.network/stats?game=global&sort=kills&time=eternity&page=<**START_PAGE**> to that of **END_PAGE**
 * These can be automated with their corresponding bash scripts in something like cron (`crontab -e`):
 ```
-0 */1 * * * sudo bash /home/seth/scripts/stratus-gameplay.sh > /dev/null 2>&1
-0 */1 * * * sudo bash /home/seth/scripts/stratus-database.sh > /dev/null 2>&1
+0 */1 * * * sudo bash /path/to/stratus-gameplay.sh > /dev/null 2>&1
+0 */1 * * * sudo bash /path/to/stratus-database.sh > /dev/null 2>&1
 ```
 
 ## Support
