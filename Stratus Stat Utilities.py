@@ -1012,7 +1012,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			
 			output("\n")
 			for team in composition:
-				output("%s has a %.2f%% chance of winning." % (team.title(), (composition[team]["stats"]["adjusted_score"] * 100 / (1 if scoreTotal is 0 else scoreTotal))))
+				output("%s has a %.2f%% chance of winning." % (team.title(), (composition[team]["stats"]["adjusted_score"] * 100 / (1 if scoreTotal == 0 else scoreTotal))))
 			
 			if assuredness_index < 0.525 or gstats["average_reliability_index"] < 0.4:
 				output("\nIt's too hard to tell who will win this game due to a low player stat accuracy (%.2f%%) or a low decision accuracy (%.2f%%)." % (gstats["average_reliability_index"] * 100, assuredness_index * 100))
