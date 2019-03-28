@@ -25,8 +25,8 @@ else:
 	print("[*] OS not supported!")
 	exit()
 
-if sys.version_info[0] < 3:
-	print("You must run this on Python 3.x")
+if platform.python_version() < 3.6:
+	print("[*] You must run this on Python 3.6!")
 	exit()
 
 import _thread
@@ -45,16 +45,16 @@ from io import BytesIO
 from shutil import copyfile
 
 cli = argparse.ArgumentParser()
-cli.add_argument('--multithreaded', "-m", help="bool :: use multithreaded player lookups", type = bool, default = MULTITHREADED)
-cli.add_argument('--clone', "-c", help="str :: set the cURL stat URL/mirror", type = str, default = MIRROR)
-cli.add_argument('--delay', "-d", help="int :: run the win predictor after a number of seconds", type = int, default = DELAY)
-cli.add_argument('--headless', "-n", help="bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
-cli.add_argument('--realtime', "-r", help="bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
-cli.add_argument('--mysql-host', help="str :: MySQL hostname", type = str, default="localhost")
-cli.add_argument('--mysql-user', help="str :: MySQL username", type = str)
-cli.add_argument('--mysql-pass', help="str :: MySQL password", type = str)
-cli.add_argument('--mysql-db', help="str :: MySQL database", type = str)
-cli.add_argument('--mysql-port', help="int :: MySQL database", type = int, default = 3306)
+cli.add_argument('--multithreaded', "-m", help = "bool :: use multithreaded player lookups", type = bool, default = MULTITHREADED)
+cli.add_argument('--clone', "-c", help = "str :: set the cURL stat URL/mirror", type = str, default = MIRROR)
+cli.add_argument('--delay', "-d", help = "int :: run the win predictor after a number of seconds", type = int, default = DELAY)
+cli.add_argument('--headless', "-n", help = "bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
+cli.add_argument('--realtime', "-r", help = "bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
+cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default="localhost")
+cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str)
+cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str)
+cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str)
+cli.add_argument('--mysql-port', help = "int :: MySQL database", type = int, default = 3306)
 ARGS: dict = cli.parse_args()
 MYSQL: bool = ARGS.mysql_user != None and ARGS.mysql_db != None
 
