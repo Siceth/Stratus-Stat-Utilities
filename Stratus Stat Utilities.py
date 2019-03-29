@@ -143,7 +143,7 @@ MAP_TYPES = ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage",
 def loadMessage() -> str:
 	return random.choice(["Searching the cloud", "Getting Stratus status", "Completing the water cycle", "Querying for snakes and goobers", "Watching the clouds"]) + "...\n"
 
-def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True) -> list:
+def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True, retry: int = 5) -> list:
 	global ARGS, UNIX
 	try:
 		buffer = BytesIO()
@@ -166,8 +166,14 @@ def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True)
 			exit()
 		return [response, ""]
 	except:
-		print("[*] cURL performance failed. Is your internet operational?")
-		exit()
+		if retry > 0:
+			print("[!] cURL operation raised an exception (%d attempts left). Retrying in 3 seconds..." % retry)
+			time.sleep(3)
+			return curlRequest(url, forceNoMirror, handleError, retry - 1)
+		else:
+			print("[*] cURL operation failed. Is your internet operational?")
+			exit()
+		
 
 def getStatPos(stat: str) -> int:
 	# 0->rank; 1->playing_time; 2->kills; 3->deaths; 4->killed; 5->kd; 6->kk; 7->name
@@ -182,7 +188,7 @@ def getStatPos(stat: str) -> int:
 
 def getPlayerStats(player: str, doCalculations: bool = True, forceRenew: bool = True) -> dict:
 	stats: dict = dict()
-	playerPage: list = curlRequest(player + ("?force-renew" if forceRenew else ""))
+	playerPage: list = curlRequest(player + ("?force-renew" if forceRenew else ""), False, False)
 	
 	if playerPage[0] > 399:
 		stats["exists"] = False
@@ -587,7 +593,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 		latestMatch: bool = False
 	
 	logHeadless("Getting match info (%s)..." % match);
-	matchPage: dict = curlRequest("matches/" + match + "?force-renew")
+	matchPage: dict = curlRequest("matches/" + match + "?force-renew", False, False)
 	if matchPage[0] > 399:
 		logHeadless("[*] Error making request!");
 		print("[*] cURL responded with a server error while requesting the match page (%i). Does the match exist?" % matchPage[0])
