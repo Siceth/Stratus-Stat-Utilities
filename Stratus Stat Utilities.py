@@ -413,16 +413,16 @@ def playerStatsLookup() -> None:
 		print("[*] The specified username does not exist!")
 
 def matchStatsLookup() -> None:
-	print("Enter match UID to lookup:")
-	uid: str = ""
-	
+	print("Enter a match UID to lookup (leave blank for the current match):")
 	while True:
 		uid: str = input(" > ").replace(' ', '')
-		if re.match("^[A-Za-z0-9-]{36}$", uid):
+		if re.match("^[A-Za-z0-9\-]{36}$", uid) or uid.replace(' ', '') == "":
 			break
 		else:
-			print("Input must be a valid UID (36 characters with dashes). Try again:")
-	
+			print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
+	if uid.replace(' ', '') == "":
+		logHeadless("Getting list of matches...");
+		uid = str(getLatestMatch())
 	print(loadMessage())
 	stats: dict = getMatchStats(uid)
 	if stats["exists"]:
@@ -569,10 +569,10 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	
 	if not ARGS.headless:
 		if ARGS.delay == 0:
-			print("Enter a match to lookup (leave blank for the current match):")
+			print("Enter a match UID to lookup (leave blank for the current match):")
 			while True:
 				match = input(" > ").replace(' ', '')
-				if re.match("^[A-Za-z0-9\-]{0,36}$", match) or match.replace(' ', '') == "":
+				if re.match("^[A-Za-z0-9\-]{36}$", match) or match.replace(' ', '') == "":
 					break
 				else:
 					print("Input must be a valid match ID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Try again:")
