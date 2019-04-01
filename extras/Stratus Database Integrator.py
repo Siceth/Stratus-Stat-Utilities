@@ -4,7 +4,7 @@ VERBOSE_OUTPUT: bool = True
 LOG_VERBOSITY: bool = True
 DELETE_INVALID_PAGES: bool = False
 FAILURE_THRESHOLD: int = 25
-STAT_PLAYERS: bool = False
+STAT_PLAYERS: bool = True
 STAT_MATCHES: bool = True
 MIRROR: str = "https://stats.seth-phillips.com/stratus/"
 
