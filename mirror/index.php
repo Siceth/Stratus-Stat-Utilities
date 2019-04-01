@@ -15,12 +15,12 @@ if(isset($_GET['request'])) {
 	if(!isset($_GET['force-renew']) && !is_dir($cacheDir.$_GET['request']) && (time()-(file_exists($cacheDir.$_GET['request']) ? filemtime($cacheDir.$_GET['request']) : 0)) < $cacheDays * 86400) {
 		echo @file_get_contents($cacheDir.$_GET['request']);
 	} else {
-		$response = substr(get_headers('https://stratus.network/'.urlencode($_GET['request']))[0], 9, 3);
+		$response = substr(get_headers('https://stratus.network/'.$_GET['request'])[0], 9, 3);
 		if($response < 400) {
 			ob_start();
 			echo "<!-- Cached ".date('Y-m-d h:i:s')." EST -->\n";
 			$start = microtime(1);
-			$page = @file_get_contents('https://stratus.network/'.urlencode($_GET['request']));
+			$page = @file_get_contents('https://stratus.network/'.$_GET['request']);
 			if($page === false) {
 				ob_end_flush();
 				http_response_code($response);
