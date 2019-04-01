@@ -59,11 +59,12 @@ cli.add_argument('--clone', "-c", help = "str :: set the cURL stat URL/mirror", 
 cli.add_argument('--delay', "-d", help = "int :: run the win predictor after a number of seconds", type = int, default = DELAY)
 cli.add_argument('--headless', "-n", help = "bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
 cli.add_argument('--realtime', "-r", help = "bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
-cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default="localhost")
+cli.add_argument('--unixbot', "-u", help = "bool :: pull data from the unixfox API", type = bool, default = UNIXBOT)
+cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = "localhost")
 cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str)
 cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str)
 cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str)
-cli.add_argument('--mysql-port', help = "int :: MySQL database", type = int, default = 3306)
+cli.add_argument('--mysql-port', help = "int :: MySQL port", type = int, default = 3306)
 ARGS: dict = cli.parse_args()
 MYSQL: bool = ARGS.mysql_user != None and ARGS.mysql_db != None
 
@@ -77,7 +78,7 @@ if MYSQL:
 	try:
 		import mysql.connector
 	except ImportError:
-		missingPackage("mysql-connector")
+		missingPackage("mysql-connector-python")
 	try:
 		M_CNX = mysql.connector.connect(
 			host = ARGS.mysql_host,
@@ -355,8 +356,8 @@ def getMatchStats(uid: str, forceRenew: bool = True) -> dict:
 			stats["type"] = stats["type"] if stats["type"].lower() in MAP_TYPES else None
 			
 			data: BeautifulSoup = data.find("small")
-			if "title" in data:
-				stats["start_timestamp"] = dateutil.parser.parse(data['title'])
+			if data.has_attr("title"):
+				stats["start_timestamp"] = dateutil.parser.parse(data["title"])
 			else:
 				stats["start_timestamp"] = None
 			
@@ -376,8 +377,8 @@ def getMatchStats(uid: str, forceRenew: bool = True) -> dict:
 				
 				stats["end_timestamp"] = stats["start_timestamp"] + timedelta(seconds = stats["duration"])
 			
-			stats["kills"] = re.findall(r'\d+', str(data[2].text))[0]
-			stats["deaths"] = re.findall(r'\d+', str(data[3].text))[0]
+			stats["kills"] = int(re.findall(r'\d+', str(data[2].text))[0])
+			stats["deaths"] = int(re.findall(r'\d+', str(data[3].text))[0])
 			
 			data: BeautifulSoup = matchPage.findAll("h4", {"class": "strong"})
 			stats["players"] = sum([int(x.find("small").text) for x in data])
@@ -385,10 +386,21 @@ def getMatchStats(uid: str, forceRenew: bool = True) -> dict:
 			stats["prev_uuid"] = None
 			stats["next_uuid"] = None
 			
+			data: BeautifulSoup = matchPage.findAll("span", {"class": "label label-success pull-right"})
+			stats["winner"] = None
+			if(len(data) > 0):
+				data: BeautifulSoup = matchPage.findAll("div", {"class": "row"})[3]
+				teamDiv: BeautifulSoup
+				for teamDiv in data.findAll("div", {"class": "col-md-4"}):
+					if teamDiv.find("h4", {"class": "strong"}).find("span", {"class": ["label label-success pull-right"]}) is not None:
+						teamCount: BeautifulSoup = teamDiv.find("h4", {"class": "strong"}).find("small")
+						teamTag: BeautifulSoup = teamDiv.find("h4", {"class": "strong"}).find("span", {"class": ["label label-danger pull-right", "label label-success pull-right"]})
+						stats["winner"] = (teamDiv.find("h4", {"class": "strong"}).text.strip())[:-((0 if teamCount is None else len(teamCount.text)) + (0 if teamTag is None else len(teamTag.text)))].strip()
+			
 		except KeyboardInterrupt:
 			raise
-		except Exception as e:
-			print("[*] Error translating web info! Did the website's page layout change?\n" + e) # TODO remove
+		except:
+			print("[*] Error translating web info! Did the website's page layout change?\n")
 			exit()
 	return stats
 
@@ -643,7 +655,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 					composition[team.lower()]["players"][player] = dict()
 		else:
 			logHeadless("Using the legacy team structure...");
-			teamRow: BeautifulSoup = matchPage.findAll("div", {"class": "row"})[3]		
+			teamRow: BeautifulSoup = matchPage.findAll("div", {"class": "row"})[3]
 			teamDiv: BeautifulSoup
 			for teamDiv in teamRow.findAll("div", {"class": "col-md-4"}):
 				teamCount: BeautifulSoup = teamDiv.find("h4", {"class": "strong"}).find("small")
@@ -1203,4 +1215,7 @@ if __name__ == '__main__':
 			main()
 	except KeyboardInterrupt:
 		print("\n\nTerminating.")
+		if MYSQL:
+			M_CURSOR.close()
+			M_CNX.close()
 		sys.exit(0)
