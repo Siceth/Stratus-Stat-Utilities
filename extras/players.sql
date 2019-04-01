@@ -70,8 +70,7 @@ CREATE TABLE `players` (
 -- Indexes for table `players`
 --
 ALTER TABLE `players`
-  ADD PRIMARY KEY (`uuid`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD PRIMARY KEY (`uuid`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
