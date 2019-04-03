@@ -155,37 +155,6 @@ def deleteFile(path: str) -> None:
 	except:
 		print("[!] Couldn't delete file at \"%s\"." % path)
 
-def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True, retry: int = 5) -> list:
-	global ARGS
-	try:
-		buffer = BytesIO()
-		c = pycurl.Curl()
-		c.setopt(pycurl.URL, (url if "://" in url else (("https://stratus.network/" if ARGS.clone == "" or forceNoMirror else ARGS.clone) + str(url))))
-		c.setopt(pycurl.USERAGENT, "Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0")
-		c.setopt(pycurl.FOLLOWLOCATION, True)
-		c.setopt(pycurl.POST, 0)
-		c.setopt(pycurl.SSL_VERIFYPEER, 0)
-		c.setopt(pycurl.SSL_VERIFYHOST, 0)
-		c.setopt(pycurl.WRITEDATA, buffer)
-		c.perform()
-		response: int = c.getinfo(pycurl.RESPONSE_CODE)
-		html: str = buffer.getvalue().decode("iso-8859-1")
-		c.close()
-		if response < 500:
-			return [response, html.replace('\n', '')]
-		if handleError:
-			print("[*] cURL responded with a server error while performing the request (%s; %i). Is the website down?" % (url, response))
-			exit()
-		return [response, ""]
-	except:
-		if retry > 0:
-			print("[!] cURL operation raised an exception (%d attempts left). Retrying in 3 seconds..." % retry)
-			time.sleep(3)
-			return curlRequest(url, forceNoMirror, handleError, retry - 1)
-		else:
-			print("[*] cURL operation failed. Is your internet operational?")
-			exit()
-
 MAP_TYPES = ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "arcade", "ffa", "mixed", "payload", "micro"]
 donorRanks: list = ["strato", "alto", "cirro"]
 staffRanks: list = ["administrator", "developer", "senior moderator", "junior developer", "moderator", "map developer", "event coordinator", "official"]
@@ -235,7 +204,7 @@ if __name__ == '__main__':
 		for player in players:
 			if ARGS.verbose:
 				i += 1
-				print("\nProcessing player %s...\t\t[%d / %d = %.2f%%]" % (player, i, t, i/t))
+				print("\nProcessing player %s...\t\t[%d / %d = %.2f%%]" % (player, i, t, i*100/t))
 			playerPage: BS = BS(open(ARGS.path + "/" + player.lower(), encoding = "utf-8"), "html.parser")
 			
 			statsVerifier: BS = playerPage.findAll("li", {"class": "active dropdown"})
@@ -432,7 +401,7 @@ if __name__ == '__main__':
 			match = str(match)
 			if ARGS.verbose:
 				i += 1
-				print("\nProcessing match %s...\t\t[%d / %d = %.2f%%]" % (match, i, t, i/t))
+				print("\nProcessing match %s...\t\t[%d / %d = %.2f%%]" % (match, i, t, i*100/t))
 			matchPage: BS = BS(open(ARGS.path + "/matches/" + match.lower(), encoding="utf-8"), "html.parser")
 			
 			statsVerifier: BS = matchPage.findAll("a", {"class": "btn btn-default"})
@@ -466,6 +435,7 @@ if __name__ == '__main__':
 						print("Cache record likely out of date; requeuing...")
 						url = "matches/" + match + "/?force-renew"
 						futures.append(pool.apply_async(requests.get, [url if "://" in url else (("https://stratus.network/" if ARGS.clone == "" else ARGS.clone) + str(url))]))
+						continue
 					
 					if data.has_attr("title"):
 						mstats[match]["start_timestamp"] = dateutil.parser.parse(data["title"])
