@@ -11,11 +11,12 @@ header('Content-type: text/plain');
 $cacheBlacklist = ['#', 'alerts', 'appeal', 'forums', 'friendships', 'maps', 'play', 'privacy', 'punishments', 'refund', 'report', 'revisions', 'rules', 'shop', 'staff', 'stats', 'teams', 'terms', 'tournaments', 'uhc', 'users'];
 
 if(isset($_GET['request'])) {
+	$_GET['request'] = rtrim($_GET['request'], '/');
 	$_GET['request'] = strtolower($_GET['request']);
 	if(!isset($_GET['force-renew']) && !is_dir($cacheDir.$_GET['request']) && (time()-(file_exists($cacheDir.$_GET['request']) ? filemtime($cacheDir.$_GET['request']) : 0)) < $cacheDays * 86400) {
 		echo @file_get_contents($cacheDir.$_GET['request']);
 	} else {
-		$response = substr(get_headers('https://stratus.network/'.$_GET['request'])[0], 9, 3);
+		$response = substr(@get_headers('https://stratus.network/'.$_GET['request'])[0], 9, 3);
 		if($response < 400) {
 			ob_start();
 			echo "<!-- Cached ".date('Y-m-d h:i:s')." EST -->\n";
