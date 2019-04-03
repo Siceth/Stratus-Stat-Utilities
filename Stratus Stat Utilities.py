@@ -141,6 +141,9 @@ def lazy_input(L: list) -> None:
 # tdm, ctw, ctf, dtc, dtm, (dtcm,) ad, koth, blitz, rage, scorebox, arcade, gs, ffa, mixed, survival, payload, ranked, micro	
 MAP_TYPES = ["tdm", "ctw", "ctf", "dtc", "dtm", "dtcm", "koth", "blitz", "rage", "arcade", "ffa", "mixed", "payload", "micro"]
 
+def higherOrderSuffix(string: str) -> int:
+	return int(float('.'.join(re.findall('\d+', string))) * (1000 if string[-1:] == 'k' else (1000000 if string[-1:] == 'm' else (1000000000 if string[-1:] == 'b' else 1))))
+
 def loadMessage() -> str:
 	return random.choice(["Searching the cloud", "Getting Stratus status", "Completing the water cycle", "Querying for snakes and goobers", "Watching the clouds"]) + "...\n"
 
@@ -174,7 +177,6 @@ def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True,
 		else:
 			print("[*] cURL operation failed. Is your internet operational?")
 			exit()
-		
 
 def getStatPos(stat: str) -> int:
 	# 0->rank; 1->playing_time; 2->kills; 3->deaths; 4->killed; 5->kd; 6->kk; 7->name
@@ -203,13 +205,13 @@ def getPlayerStats(player: str, doCalculations: bool = True, forceRenew: bool = 
 			
 			data: BeautifulSoup = playerPage.findAll("div", {"class": "number"})
 			if len(data) >= 7:
-				stats["kills"]: int = int(data[0].get_text())
-				stats["deaths"]: int = int(data[1].get_text())
+				stats["kills"]: int = higherOrderSuffix(data[0].get_text())
+				stats["deaths"]: int = higherOrderSuffix(data[1].get_text())
 				stats["friends"]: int = int(data[2].get_text())
 				stats["kill_rank"]: int = int((data[3].get_text())[:-2])
 				stats["reported_kd"]: float = float(data[4].get_text())
 				stats["reported_kk"]: float = float(data[5].get_text())
-				stats["droplets"]: int = int(float('.'.join(re.findall('\d+', data[6].get_text()))) * (1000 if (data[6].get_text())[-1:] == 'k' else (1000000 if (data[6].get_text())[-1:] == 'm' else (1000000000 if (data[6].get_text())[-1:] == 'b' else 1))))
+				stats["droplets"]: int = higherOrderSuffix(data[6].get_text())
 			else:
 				stats["kills"]: int = 0
 				stats["deaths"]: int = 0
