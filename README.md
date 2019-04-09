@@ -40,7 +40,7 @@ What little is available to configure should be pretty self-explanitory.
 * Setting a nonzero **DELAY** allows you to request win predictor statistics in tandem with the beginning of the current match.  Setting the delay to zero asks for match input instead.
 * **HEADLESS_MODE** is used for automatic scraping and logging for other applications to hook into.  Program will dump standard output into output.log and complete_output.log when enabled.
 * **REALTIME_MODE** (dependent on HEADLESS_MODE being active) will run a headless cycle every 15 seconds, regardless of match status.
-* Last but not least, **UNIXBOT** will pull data from the unixfox API for live player data to circumvent problems with native Stratus match information
+* Last but not least, **UNIXBOT** will pull data from the unixfox API for live player data to circumvent problems with native Stratus match information.
 
 ### index.php
 * **$cacheDir** should point to a pre-existing directory with proper permissions already established.  All of the data requests coming through your mirror will be stored there.
@@ -55,6 +55,7 @@ What little is available to configure should be pretty self-explanitory.
 ```
 0 */1 * * * sudo bash /path/to/stratus-gameplay.sh > /dev/null 2>&1
 0 */1 * * * sudo bash /path/to/stratus-database.sh > /dev/null 2>&1
+0 0 * * * sudo bash /path/to/stratus-growth.sh > /dev/null 2>&1
 ```
 
 ## Support
