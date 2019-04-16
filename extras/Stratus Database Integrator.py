@@ -402,7 +402,12 @@ if __name__ == '__main__':
 			if ARGS.verbose:
 				i += 1
 				print("\nProcessing match %s...\t\t[%d / %d = %.2f%%]" % (match, i, t, i*100/t))
-			matchPage: BS = BS(open(ARGS.path + "/matches/" + match.lower(), encoding="utf-8"), "html.parser")
+			matchPage: BS
+			try:
+				matchPage = BS(open(ARGS.path + "/matches/" + match.lower(), encoding="utf-8"), "html.parser")
+			except OSError:
+				print("[!] File not found: " + ARGS.path + "/matches/" + match.lower())
+				continue
 			
 			statsVerifier: BS = matchPage.findAll("a", {"class": "btn btn-default"})
 			if len(statsVerifier) == 0 or statsVerifier[0].get_text().lower().replace('\n', '').replace(' ', '') != "allmatches":
@@ -491,15 +496,16 @@ if __name__ == '__main__':
 			else:
 				if ARGS.verbose:
 					print("No updates. C:%s F:%s" % (matchCache[match.lower()][0], mstats[match]["cached"]))
-
-	if ARGS.verbose:
-		print("Disconnecting from database; processing finished.")
-	M_CURSOR.close()
-	M_CNX.close()
 	
 	if ARGS.verbose and len(futures) > 0:
 		print("Waiting for all requests to close...")
 	for future in futures:
 		future.get()
 	if ARGS.verbose:
-		print("All futures closed.\n\nDone.")
+		print("All futures closed.")
+	
+	if ARGS.verbose:
+		print("Disconnecting from database; processing finished.")
+	M_CURSOR.close()
+	M_CNX.close()
+	print("\nDone.")
