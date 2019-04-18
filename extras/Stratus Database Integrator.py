@@ -251,21 +251,21 @@ if __name__ == '__main__':
 					if len(data) > 0:
 						pstats[player]["username"] = BS(str(data[0]), "lxml").findAll("span")[0].get_text().replace('\n', '').replace(' ', '')
 					if len(data) > 3:
-						for matches in data:
-							subs: BS = BS(str(matches), "lxml").findAll("small", {"class": "strong"})
+						for hits in data:
+							subs: BS = BS(str(hits), "lxml").findAll("small", {"class": "strong"})
 							if len(subs) > 0:
 								for sub in subs:
 									if sub.text.lower() == "cores leaked":
-										pstats[player]["cores"] = int(re.sub("\D", "", matches.get_text()))
+										pstats[player]["cores"] = int(re.sub("\D", "", hits.get_text()))
 										break
 									elif sub.text.lower() == "monuments destroyed":
-										pstats[player]["monuments"] = int(re.sub("\D", "", matches.get_text()))
+										pstats[player]["monuments"] = int(re.sub("\D", "", hits.get_text()))
 										break
 									elif sub.text.lower() == "wools placed":
-										pstats[player]["wools"] = int(re.sub("\D", "", matches.get_text()))
+										pstats[player]["wools"] = int(re.sub("\D", "", hits.get_text()))
 										break
 									elif sub.text.lower() == "flags captured":
-										pstats[player]["flags"] = int(re.sub("\D", "", matches.get_text()))
+										pstats[player]["flags"] = int(re.sub("\D", "", hits.get_text()))
 										break
 					if "username" not in pstats[player]:
 						pstats[player]["username"] = player
