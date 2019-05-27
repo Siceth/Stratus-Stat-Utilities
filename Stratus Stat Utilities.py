@@ -12,7 +12,7 @@ MIRROR: str = "https://stats.seth-phillips.com/stratus/"
 DELAY: int = 15
 HEADLESS_MODE: bool = False
 REALTIME_MODE: bool = False
-UNIXBOT: bool = True
+UNIXBOT: bool = False
 
 def missingPackage(package: str) -> None:
 	print("Your system is missing %(0)s. Please run `easy_install %(0)s` or `pip install %(0)s` before executing." % { '0': package })
