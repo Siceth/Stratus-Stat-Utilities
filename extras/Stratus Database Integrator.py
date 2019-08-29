@@ -235,8 +235,8 @@ if __name__ == '__main__':
 					
 					data: BS = playerPage.findAll("div", {"class": "number"})
 					if len(data) >= 7:
-						pstats[player]["kills"] = int(data[0].get_text())
-						pstats[player]["deaths"] = int(data[1].get_text())
+						pstats[player]["kills"] = int(re.sub("\D", "", data[0]['title']))
+						pstats[player]["deaths"] = int(re.sub("\D", "", data[1]['title']))
 						pstats[player]["friends"] = int(data[2].get_text())
 						pstats[player]["kill_rank"] = int((data[3].get_text())[:-2])
 						pstats[player]["droplets"] = int(float('.'.join(re.findall('\d+', data[6].get_text()))) * (1000 if (data[6].get_text())[-1:] == 'k' else (1000000 if (data[6].get_text())[-1:] == 'm' else (1000000000 if (data[6].get_text())[-1:] == 'b' else 1))))

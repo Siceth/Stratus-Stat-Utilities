@@ -205,8 +205,8 @@ def getPlayerStats(player: str, doCalculations: bool = True, forceRenew: bool = 
 			
 			data: BeautifulSoup = playerPage.findAll("div", {"class": "number"})
 			if len(data) >= 7:
-				stats["kills"]: int = higherOrderSuffix(data[0].get_text())
-				stats["deaths"]: int = higherOrderSuffix(data[1].get_text())
+				stats["kills"]: int = int(re.sub("\D", "", data[0]['title']))
+				stats["deaths"]: int = int(re.sub("\D", "", data[1]['title']))
 				stats["friends"]: int = int(data[2].get_text())
 				stats["kill_rank"]: int = int((data[3].get_text())[:-2])
 				stats["reported_kd"]: float = float(data[4].get_text())
