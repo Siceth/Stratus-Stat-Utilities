@@ -103,6 +103,7 @@ if MYSQL:
 			charset = "utf8"
 		)
 		M_CURSOR = M_CNX.cursor()
+		print("Connected to database successfully.")
 	except Exception as err:
 		print("[*] Error connecting to MySQL database with specified credentials:\n\t%s" % err)
 		exit()
@@ -129,7 +130,6 @@ except ImportError:
 
 def runQuery(query: str, handleCommit: bool = True):
 	global ARGS, M_CURSOR
-	print("\n\n" + query + "\n\n")
 	try:
 		M_CURSOR.execute(query)
 		if handleCommit:
@@ -1017,7 +1017,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 				composition[team]["stats"]["raw_score"] = 0.5 * composition[team]["stats"]["average_kd"] + 0.1 * composition[team]["stats"]["average_monuments_per_hour"] + 0.1 * composition[team]["stats"]["average_wools_per_hour"] + 0.1 * composition[team]["stats"]["average_cores_per_hour"] + 0.2 * composition[team]["stats"]["average_kills_per_game"]
 			else:
 				mapType = "UNKNOWN"
-				print("[*] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
+				print("[!] Generalizing statistics to rely on KHPDG; approximation of estimation will be lower.")
 				composition[team]["stats"]["raw_score"] = composition[team]["stats"]["average_khpdg"]
 			
 			composition[team]["stats"]["raw_score"] += 0.02 * composition[team]["stats"]["total_donors"] + 0.03 * composition[team]["stats"]["total_tournament_winners"]
