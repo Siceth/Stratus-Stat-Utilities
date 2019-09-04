@@ -225,6 +225,13 @@ def getPlayerStats(player: str, doCalculations: bool = True, forceRenew: bool = 
 		playerPage: BeautifulSoup = BS(playerPage[1], "lxml")
 		
 		try:
+			# Suspended accounts
+			alerts: BeautifulSoup = playerPage.findAll("div", {"class": "alert alert-block alert-danger"})
+			if(len(alerts)) > 0:
+				if str(alerts[0].get_text())=="Account SuspendedThis account is suspended. If you believe this is in error, please contact us at[email protected]":
+					stats["exists"] = False
+					return stats
+			
 			# Raw stats
 			stats["uuid"]: str = playerPage.findAll("img", {"class": "avatar"})[0]['src'][40:76]
 			
@@ -449,7 +456,7 @@ def playerStatsLookup() -> None:
 			if stat != "exists":
 				print("%s: %s" % (stat.replace('_', ' ').title(), stats[stat]))
 	else:
-		print("[*] The specified username does not exist!")
+		print("[*] The specified username does not exist or is suspended!")
 
 def matchStatsLookup() -> None:
 	print("Enter a match UID to lookup (leave blank for the current match):")
@@ -1237,6 +1244,7 @@ if __name__ == '__main__':
 							print("\n=-=-=\nBEGIN PROCESSING UID %s\t\t[%d / %d = %.2f%%]\n=-=-=\n" % (x, i, matches, i*100/matches))
 							winPredictor(x, cycleStart)
 							print("\n=-=-=\nEND PROCESSING UID %s\n=-=-=\n" % x)
+							i += 1
 						print("Done.")
 					else:
 						print("Terminating.")
