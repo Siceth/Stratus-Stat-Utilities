@@ -1145,7 +1145,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			else:
 				output("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"] * 100, assuredness_index * 100))
 			if MYSQL:
-				runQuery("INSERT INTO matches (uid, map, type, duration, kills, deaths, players, predicted_winner, player_stat_accuracy, decision_accuracy) VALUES ('%s', '%s', '%s', 0, 0, 0, %i, '%s', %.5f, %.5f) ON DUPLICATE KEY UPDATE predicted_winner='%s', player_stat_accuracy=%.5f, decision_accuracy=%.5f" % (match, mapName, mapType, gstats["total_players"], winner[0].title(), gstats["average_reliability_index"], assuredness_index, winner[0].title(), gstats["average_reliability_index"], assuredness_index))
+				runQuery("INSERT INTO matches (uid, map, type, duration, kills, deaths, players, predicted_winner, player_stat_accuracy, decision_accuracy) VALUES (\"%s\", \"%s\", \"%s\", 0, 0, 0, %i, \"%s\", %.5f, %.5f) ON DUPLICATE KEY UPDATE predicted_winner=\"%s\", player_stat_accuracy=%.5f, decision_accuracy=%.5f" % (match, mapName, mapType, gstats["total_players"], winner[0].title(), gstats["average_reliability_index"], assuredness_index, winner[0].title(), gstats["average_reliability_index"], assuredness_index))
 		else:
 			output("[*] The team list is empty and therefore no stats can be found!")
 	else:
