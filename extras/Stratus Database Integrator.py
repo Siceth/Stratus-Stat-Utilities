@@ -35,6 +35,7 @@ try:
 except ImportError:
 	missingPackage("mysql-connector-python")
 
+config: dict = {}
 try:
 	config = configparser.ConfigParser()
 	config.read(str(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))) + '/config.ini')
@@ -51,11 +52,11 @@ cli.add_argument('--matches', "-m", help = "bool :: stat all matches", type = bo
 cli.add_argument('--path', help = "str :: path to root cache", type = str, default = config["Integrator"]["path"] if config["Integrator"]["path"] else None)
 cli.add_argument('--clone', "-c", help = "str :: set the cURL stat URL/mirror", type = str, default = MIRROR)
 cli.add_argument('--pool-size', "-s", help = "int :: the number of threads to create for async requests", type = int, default = POOL_SIZE)
-cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = config["MySQL"]["host"] if config["MySQL"]["host"] else "localhost")
-cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str, default = config["MySQL"]["username"] if config["MySQL"]["username"] else None)
-cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str, default = config["MySQL"]["password"] if config["MySQL"]["password"] else None)
-cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str, default = config["MySQL"]["database"] if config["MySQL"]["database"] else None)
-cli.add_argument('--mysql-port', help = "int :: MySQL port", type = int, default = config["MySQL"]["port"] if config["MySQL"]["port"] else 3306)
+cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = config["MySQL"]["host"] if "MySQL" in config and config["MySQL"]["host"] else "localhost")
+cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str, default = config["MySQL"]["username"] if "MySQL" in config and config["MySQL"]["username"] else None)
+cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str, default = config["MySQL"]["password"] if "MySQL" in config and config["MySQL"]["password"] else None)
+cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str, default = config["MySQL"]["database"] if "MySQL" in config and config["MySQL"]["database"] else None)
+cli.add_argument('--mysql-port', help = "int :: MySQL port", type = int, default = config["MySQL"]["port"] if "MySQL" in config and config["MySQL"]["port"] else 3306)
 ARGS: dict = cli.parse_args()
 
 class Tee:
@@ -130,7 +131,6 @@ except ImportError:
 
 def runQuery(query: str, handleCommit: bool = True):
 	global ARGS, M_CURSOR
-	#print("\n\n" + query + "\n\n")
 	try:
 		M_CURSOR.execute(query)
 		if handleCommit:

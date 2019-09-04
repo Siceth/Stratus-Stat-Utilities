@@ -38,10 +38,18 @@ if version.parse(platform.python_version()) < version.parse("3.6"):
 	print("[*] You must run this on Python 3.6!")
 	exit()
 
+# This stupid thing has to be loaded in up here or else you get a lovely segmentation fault
+try:
+	import mysql.connector
+except ImportError:
+	missingPackage("mysql-connector-python")
+
 import _thread
 import argparse
+import configparser
 import ctypes
 import glob
+import inspect
 import json
 import math
 import random
@@ -53,6 +61,14 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from shutil import copyfile
 
+config: dict = {}
+try:
+	config = configparser.ConfigParser()
+	config.read(str(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))) + '/config.ini')
+	print("Found config file successfully.")
+except:
+	pass
+
 cli = argparse.ArgumentParser()
 cli.add_argument('--multithreaded', "-m", help = "bool :: use multithreaded player lookups", type = bool, default = MULTITHREADED)
 cli.add_argument('--clone', "-c", help = "str :: set the cURL stat URL/mirror", type = str, default = MIRROR)
@@ -60,11 +76,11 @@ cli.add_argument('--delay', "-d", help = "int :: run the win predictor after a n
 cli.add_argument('--headless', "-n", help = "bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
 cli.add_argument('--realtime', "-r", help = "bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
 cli.add_argument('--unixbot', "-u", help = "bool :: pull data from the unixfox API", type = bool, default = UNIXBOT)
-cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = "localhost")
-cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str)
-cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str)
-cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str)
-cli.add_argument('--mysql-port', help = "int :: MySQL port", type = int, default = 3306)
+cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = config["MySQL"]["host"] if "MySQL" in config and config["MySQL"]["host"] else "localhost")
+cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str, default = config["MySQL"]["username"] if "MySQL" in config and config["MySQL"]["username"] else None)
+cli.add_argument('--mysql-pass', help = "str :: MySQL password", type = str, default = config["MySQL"]["password"] if "MySQL" in config and config["MySQL"]["password"] else None)
+cli.add_argument('--mysql-db', help = "str :: MySQL database", type = str, default = config["MySQL"]["database"] if "MySQL" in config and config["MySQL"]["database"] else None)
+cli.add_argument('--mysql-port', help = "int :: MySQL port", type = int, default = config["MySQL"]["port"] if "MySQL" in config and config["MySQL"]["port"] else 3306)
 ARGS: dict = cli.parse_args()
 MYSQL: bool = ARGS.mysql_user != None and ARGS.mysql_db != None
 
@@ -74,24 +90,20 @@ try:
 except ImportError:
 	missingPackage("lxml")
 
-if MYSQL:
+if MYSQL:	
 	try:
-		import mysql.connector
-	except ImportError:
-		missingPackage("mysql-connector-python")
-	try:
+		print("Connecting to database...")
 		M_CNX = mysql.connector.connect(
 			host = ARGS.mysql_host,
 			user = ARGS.mysql_user,
 			password = ARGS.mysql_pass,
 			database = ARGS.mysql_db,
 			port = ARGS.mysql_port,
-			autocommit = True,
 			use_unicode = True,
 			charset = "utf8"
 		)
 		M_CURSOR = M_CNX.cursor()
-	except mysql.connector.Error as err:
+	except Exception as err:
 		print("[*] Error connecting to MySQL database with specified credentials:\n\t%s" % err)
 		exit()
 
@@ -114,6 +126,17 @@ try:
 	import dateutil.parser
 except ImportError:
 	missingPackage("python-dateutil")
+
+def runQuery(query: str, handleCommit: bool = True):
+	global ARGS, M_CURSOR
+	print("\n\n" + query + "\n\n")
+	try:
+		M_CURSOR.execute(query)
+		if handleCommit:
+			M_CNX.commit()
+	except Exception as e:
+		print("[*] Can't run query:\n=-=-=\n%s\n=-=-=\nMySQL says: %s\n=-=-=\n" % (query, e))
+		exit()
 
 def logHeadless(data: str, newLine: bool = True, mode: str = 'a') -> None:
 	global ARGS
@@ -171,7 +194,7 @@ def curlRequest(url: str, forceNoMirror: bool = False, handleError: bool = True,
 		return [response, ""]
 	except:
 		if retry > 0:
-			print("[!] cURL operation raised an exception (%d attempts left). Retrying in 3 seconds..." % retry)
+			print("[!] cURL operation raised an exception (%i attempts left). Retrying in 3 seconds..." % retry)
 			time.sleep(3)
 			return curlRequest(url, forceNoMirror, handleError, retry - 1)
 		else:
@@ -678,14 +701,14 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			with ThreadPoolExecutor(max_workers = 4) as executor:
 				team: str
 				for team in composition:
-					print("\nGetting stats for players on %s (%d)..." % (team, len(composition[team]["players"])))
+					print("\nGetting stats for players on %s (%i)..." % (team, len(composition[team]["players"])))
 					player: str
 					for player in composition[team]["players"]:
 						print("Getting stats for %s..." % player)
 						composition[team]["players"][player] = executor.submit(getPlayerStats, player, True, False)
 						players.append(player)
 				tEst = len(players) * 2.2
-				print("\nQuerying web server for player statistics (this will take some time; ETA %ds)..." % math.ceil(tEst))
+				print("\nQuerying web server for player statistics (this will take some time; ETA %is)..." % math.ceil(tEst))
 				team: str
 				for team in composition:
 					player: str
@@ -697,7 +720,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			for team in composition:
 				tEstTeam = len(composition[team]["players"]) * 2.5
 				tEst += tEstTeam
-				print("\nGetting stats for players on %s (%d; ETA %ds)..." % (team, len(composition[team]["players"]), math.ceil(tEstTeam)))
+				print("\nGetting stats for players on %s (%i; ETA %is)..." % (team, len(composition[team]["players"]), math.ceil(tEstTeam)))
 				player: str
 				for player in composition[team]["players"]:
 					print("Getting stats for %s..." % player)
@@ -1118,16 +1141,12 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 			
 			if assuredness_index < 0.525 or gstats["average_reliability_index"] < 0.4:
 				output("\nIt's too hard to tell who will win this game due to a low player stat accuracy (%.2f%%) or a low decision accuracy (%.2f%%)." % (gstats["average_reliability_index"] * 100, assuredness_index * 100))
-				if MYSQL:
-					M_CURSOR.execute("UPDATE currentmap SET Value = 'Too close to predict' WHERE id='7'")
 			elif assuredness_index > 0.825 and gstats["average_reliability_index"] > 0.7:
 				output("\nI am very sure that %s will win with a %.2f%% player stat accuracy and a high decision accuracy (%.2f%%)." % (winner[0].title(), gstats["average_reliability_index"] * 100, assuredness_index * 100))
-				if MYSQL:
-					M_CURSOR.execute("UPDATE currentmap SET Value = '%s (%.2f%% chance)' WHERE id='7'" % (winner[0].title(), assuredness_index * 100))
 			else:
 				output("\nI predict that %s will win with a %.2f%% player stat accuracy and a %.2f%% decision accuracy." % (winner[0].title(), gstats["average_reliability_index"] * 100, assuredness_index * 100))
-				if MYSQL:
-					M_CURSOR.execute("UPDATE currentmap SET Value = '%s (%.2f%% chance)' WHERE id='7'" % (winner[0].title(), assuredness_index * 100))
+			if MYSQL:
+				runQuery("INSERT INTO matches (uid, map, type, duration, kills, deaths, players) VALUES ('%s', '%s', '%s', 0, 0, 0, %i) ON DUPLICATE KEY UPDATE predicted_winner='%s', player_stat_accuracy=%.5f, decision_accuracy=%.5f" % (match, mapName, mapType, gstats["total_players"], winner[0], gstats["average_reliability_index"], assuredness_index))
 		else:
 			output("[*] The team list is empty and therefore no stats can be found!")
 	else:
