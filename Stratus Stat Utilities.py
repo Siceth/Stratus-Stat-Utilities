@@ -6,12 +6,13 @@
 ################################
 
 TITLE_TEXT: str = "Stratus Stat Utilities"
-VERSION: str = "1.3"
+VERSION: str = "1.4"
 MULTITHREADED: bool = True
 MIRROR: str = "https://stats.seth-phillips.com/stratus/"
 DELAY: int = 15
 HEADLESS_MODE: bool = False
 REALTIME_MODE: bool = False
+UID_INGESTION: str = ""
 UNIXBOT: bool = False
 
 def missingPackage(package: str) -> None:
@@ -75,6 +76,7 @@ cli.add_argument('--clone', "-c", help = "str :: set the cURL stat URL/mirror", 
 cli.add_argument('--delay', "-d", help = "int :: run the win predictor after a number of seconds", type = int, default = DELAY)
 cli.add_argument('--headless', "-n", help = "bool :: automatically run the program in non-interactive win predictor mode", type = bool, default = HEADLESS_MODE)
 cli.add_argument('--realtime', "-r", help = "bool :: run headless mode consistently", type = bool, default = REALTIME_MODE)
+cli.add_argument('--ingest', "-i", help = "str :: use an input file to loop predictions", type = str, default = UID_INGESTION)
 cli.add_argument('--unixbot', "-u", help = "bool :: pull data from the unixfox API", type = bool, default = UNIXBOT)
 cli.add_argument('--mysql-host', help = "str :: MySQL hostname", type = str, default = config["MySQL"]["host"] if "MySQL" in config and config["MySQL"]["host"] else "localhost")
 cli.add_argument('--mysql-user', help = "str :: MySQL username", type = str, default = config["MySQL"]["username"] if "MySQL" in config and config["MySQL"]["username"] else None)
@@ -604,7 +606,7 @@ def getLatestMatch() -> str:
 def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	global ARGS, MYSQL, M_CNX, M_CURSOR, MAP_TYPES
 	
-	if not ARGS.headless:
+	if not ARGS.headless and ARGS.ingest=="":
 		if ARGS.delay == 0:
 			print("Enter a match UID to lookup (leave blank for the current match):")
 			while True:
@@ -641,7 +643,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 	mapName: str = matchPage.find("h2").find("a").get_text().title()
 	mapType: str = str(matchPage.find("img", {"class": "thumbnail"})).split('/')[4]
 	
-	if mapType in MAP_TYPES or ARGS.headless:
+	if mapType in MAP_TYPES or ARGS.headless or ARGS.ingest!="":
 		mapExists: bool = True
 	else:
 		if mapType == "" or mapType == "map.png" or mapType[:7] == "map.png":
@@ -649,26 +651,23 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 		else:
 			print("The requested match type (\"%s\") is not a supported gamemode!" % mapType)
 		print("Continue anyway? [y/n]")
-		if ARGS.headless:
-			mapExists: bool = True
-		else:
-			while True:
-				option = input(" > ").lower()
-				if option == 'y' or option == 'yes':
-					mapExists: bool = True
-					break
-				elif option == 'n' or option == 'no':
-					mapExists: bool = False
-					break
-				else:
-					print("Please specify a \"yes\" or \"no\":")
+		while True:
+			option = input(" > ").lower()
+			if option == 'y' or option == 'yes':
+				mapExists: bool = True
+				break
+			elif option == 'n' or option == 'no':
+				mapExists: bool = False
+				break
+			else:
+				print("Please specify a \"yes\" or \"no\":")
 	
 	if mapExists:
 		players: list = list()
 		gstats: dict = dict()
 		composition: dict = dict()
 		
-		if UNIXBOT and (latestMatch or ARGS.headless):
+		if UNIXBOT and (latestMatch or ARGS.headless or ARGS.ingest!=""):
 			logHeadless("Getting the live team structure...");
 			currentPlayers: dict = getCurrentPlayers()
 			team: str
@@ -696,7 +695,7 @@ def winPredictor(match: str = "", cycleStart: str = "") -> None:
 		
 		logHeadless("Downloading player statistics...");
 		if ARGS.multithreaded:
-			if not ARGS.headless:
+			if not ARGS.headless and ARGS.ingest=="":
 				print("NOTE: You've enabled the MULTITHREADED option, which is currently developmental and needs more timing tests.") # AKA "it works on my machine"
 			with ThreadPoolExecutor(max_workers = 4) as executor:
 				team: str
@@ -1201,6 +1200,49 @@ def main() -> None:
 
 if __name__ == '__main__':
 	try:
+		if ARGS.headless and ARGS.ingest!="":
+			print("[*] Headless mode and ingestion mode can't be activated simultaneously! How do you expect to eat without a head???")
+			exit()
+		if ARGS.ingest!="":
+			if os.path.isfile(os.path.join(ARGS.ingest)):
+				print("Reading input file...")
+				matches: int = 0
+				i: int = 1
+				with open(ARGS.ingest, 'r') as f:
+					for x in f:
+						matches += 1
+					print("Found %i matches in \"%s\". " % (matches, ARGS.ingest))
+					# TODO: Would this be automated or human-ran?
+					ingest: bool = True
+					# print("Found %i matches in \"%s\". Continue? [y/n]" % (matches, ARGS.ingest))
+					# while True:
+						# option = input(" > ").lower()
+						# if option == 'y' or option == 'yes':
+							# ingest: bool = True
+							# break
+						# elif option == 'n' or option == 'no':
+							# ingest: bool = False
+							# break
+						# else:
+							# print("Please specify a \"yes\" or \"no\":")
+					if ingest:
+						f.seek(0)
+						print("Ingesting...")
+						if ARGS.delay != 0:
+							print("DELAY parameter overridden for quicker traversal")
+							ARGS.delay = 0
+						for x in f:
+							cycleStart: str = datetime.now().isoformat()
+							x: str = x.rstrip()
+							print("\n=-=-=\nBEGIN PROCESSING UID %s\t\t[%d / %d = %.2f%%]\n=-=-=\n" % (x, i, matches, i*100/matches))
+							winPredictor(x, cycleStart)
+							print("\n=-=-=\nEND PROCESSING UID %s\n=-=-=\n" % x)
+						print("Done.")
+					else:
+						print("Terminating.")
+			else:
+				print("[*] File \"%s\" not found!" % ARGS.ingest)
+			exit()
 		if ARGS.headless:
 			print("Headless mode is enabled. Events will be recorded to `output.log`. Keyboard terminate / pkill if the loop gets messy.")
 			logHeadless("", False)
